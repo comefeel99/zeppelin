@@ -31,6 +31,7 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.interpreter.InterpreterFactory;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
+import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.quartz.CronScheduleBuilder;
@@ -59,11 +60,14 @@ public class Notebook {
   private StdSchedulerFactory quertzSchedFact;
   private org.quartz.Scheduler quartzSched;
   private JobListenerFactory jobListenerFactory;
+  private NotebookRepo notebookRepo;
 
-  public Notebook(ZeppelinConfiguration conf, SchedulerFactory schedulerFactory,
+  public Notebook(ZeppelinConfiguration conf, NotebookRepo notebookRepo, 
+      SchedulerFactory schedulerFactory,
       InterpreterFactory replFactory, JobListenerFactory jobListenerFactory) throws IOException,
       SchedulerException {
     this.conf = conf;
+    this.notebookRepo = notebookRepo;
     this.schedulerFactory = schedulerFactory;
     this.replFactory = replFactory;
     this.jobListenerFactory = jobListenerFactory;
@@ -97,7 +101,7 @@ public class Notebook {
    */
   public Note createNote(List<String> interpreterIds) throws IOException {
     NoteInterpreterLoader intpLoader = new NoteInterpreterLoader(replFactory);
-    Note note = new Note(conf, intpLoader, jobListenerFactory, quartzSched);
+    Note note = new Note(notebookRepo, intpLoader, jobListenerFactory);
     intpLoader.setNoteId(note.id());
     synchronized (notes) {
       notes.put(note.id(), note);
@@ -105,7 +109,7 @@ public class Notebook {
     if (interpreterIds != null) {
       bindInterpretersToNote(note.id(), interpreterIds);
     }
-
+    note.persist();
     return note;
   }
 
@@ -153,32 +157,41 @@ public class Notebook {
       e.printStackTrace();
     }
   }
+  
+  private Note loadNoteFromRepo(String id) {
+    Note note = null;
+    try {
+      note = notebookRepo.get(id);
+    } catch (IOException e) {
+      logger.error("Failed to load " + id, e);
+    }
+    if (note == null) {
+      return null;
+    }
+    
+    // set NoteInterpreterLoader
+    NoteInterpreterLoader noteInterpreterLoader = new NoteInterpreterLoader(replFactory);      
+    note.setReplLoader(noteInterpreterLoader);
+    noteInterpreterLoader.setNoteId(note.id());
+    
+    // set JobListenerFactory
+    note.setJobListenerFactory(jobListenerFactory);
+    
+    // set notebookRepo
+    note.setNotebookRepo(notebookRepo);
+    
+    synchronized (notes) {
+      notes.put(note.id(), note);
+      refreshCron(note.id());
+    }    
+    return note;
+  }
 
   private void loadAllNotes() throws IOException {
-    File notebookDir = new File(conf.getNotebookDir());
-    File[] dirs = notebookDir.listFiles();
-    if (dirs == null) {
-      return;
-    }
-    for (File f : dirs) {
-      boolean isHidden = f.getName().startsWith(".");
-      if (f.isDirectory() && !isHidden) {
-        Scheduler scheduler =
-            schedulerFactory.createOrGetFIFOScheduler("note_" + System.currentTimeMillis());
-        logger.info("Loading note from " + f.getName());
-        NoteInterpreterLoader noteInterpreterLoader = new NoteInterpreterLoader(replFactory);
-        Note note = Note.load(f.getName(),
-            conf,
-            noteInterpreterLoader,
-            scheduler,
-            jobListenerFactory, quartzSched);
-        noteInterpreterLoader.setNoteId(note.id());
-
-        synchronized (notes) {
-          notes.put(note.id(), note);
-          refreshCron(note.id());
-        }
-      }
+    List<NoteInfo> noteInfos = notebookRepo.list();
+    
+    for (NoteInfo info : noteInfos) {
+      loadNoteFromRepo(info.getId());
     }
   }
 

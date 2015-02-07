@@ -48,6 +48,7 @@ public class NotebookTest implements JobListenerFactory{
 	private SchedulerFactory schedulerFactory;
 	private File notebookDir;
 	private Notebook notebook;
+	private NotebookRepo notebookRepo;
   private InterpreterFactory factory;
 
 	@Before
@@ -69,9 +70,9 @@ public class NotebookTest implements JobListenerFactory{
     MockInterpreter1.register("mock1", "org.apache.zeppelin.interpreter.mock.MockInterpreter1");
     MockInterpreter2.register("mock2", "org.apache.zeppelin.interpreter.mock.MockInterpreter2");
 
-    factory = new InterpreterFactory(conf, new InterpreterOption(false));
-
-		notebook = new Notebook(conf, schedulerFactory, factory, this);
+    factory = new InterpreterFactory(conf);
+    notebookRepo = new VFSNotebookRepo(conf, notebookDir.toURI());
+		notebook = new Notebook(conf, notebookRepo, schedulerFactory, factory, this);
 	}
 
 	@After
@@ -103,12 +104,12 @@ public class NotebookTest implements JobListenerFactory{
 	public void testPersist() throws IOException, SchedulerException{
 		Note note = notebook.createNote();
 
-		// run with default repl
+		// run with defatul repl
 		Paragraph p1 = note.addParagraph();
 		p1.setText("hello world");
 		note.persist();
 
-		Notebook notebook2 = new Notebook(conf, schedulerFactory, new InterpreterFactory(conf), this);
+		Notebook notebook2 = new Notebook(conf, notebookRepo, schedulerFactory, new InterpreterFactory(conf), this);
 		assertEquals(1, notebook2.getAllNotes().size());
 	}
 
