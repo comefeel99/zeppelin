@@ -91,6 +91,7 @@
     <module>angular</module>
     <module>shell</module>
     <module>hive</module>
+    <module>mysql</module>
     <module>zeppelin-web</module>
     <module>zeppelin-server</module>
     <module>zeppelin-distribution</module>
