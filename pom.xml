@@ -56,8 +56,8 @@
 
   <scm>
     <url>http://zeppelin.incubator.apache.org</url>
-    <connection>scm:git:git:git@github.com:apache/incubator-zeppelin.git</connection>
-    <developerConnection>scm:git:git@github.com:apache/incubator-zeppelin.git</developerConnection>
+    <connection>scm:git:git@github.com:apache/incubator-zeppelin.git</connection>
+    <developerConnection>scm:git:git@github.com:Leemoonsoo/incubator-zeppelin.git</developerConnection>
   </scm>
 
   <developers>
