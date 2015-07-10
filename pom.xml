@@ -57,7 +57,6 @@
     <url>https://git-wip-us.apache.org/repos/asf/incubator-zeppelin.git</url>
     <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-zeppelin.git</connection>
     <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-zeppelin.git</developerConnection>
-    <tag>HEAD</tag>
   </scm>
 
   <developers>
