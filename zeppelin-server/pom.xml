@@ -346,7 +346,6 @@
             <exclude>**/derby.log</exclude>
             <exclude>**/metastore_db/</exclude>
             <exclude>**/README.md</exclude>
-            <exclude>src/test/java/com/webautomation/*</exclude>
           </excludes>
         </configuration>
       </plugin>
