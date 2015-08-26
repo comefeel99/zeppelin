@@ -96,8 +96,8 @@ public class RemoteInterpreterTest {
     intpB.setInterpreterGroup(intpGroup);
 
 
-    RemoteInterpreterProcess process = intpA.getInterpreterProcess();
-    process.equals(intpB.getInterpreterProcess());
+    InterpreterConnectionFactory process = intpA.getInterpreterConnectionFactory();
+    process.equals(intpB.getInterpreterConnectionFactory());
 
     assertFalse(process.isRunning());
     assertEquals(0, process.getNumIdleClient());
@@ -224,7 +224,7 @@ public class RemoteInterpreterTest {
     intpA.close();
     intpB.close();
 
-    RemoteInterpreterProcess process = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory process = intpA.getInterpreterConnectionFactory();
     assertFalse(process.isRunning());
   }
 
@@ -342,7 +342,7 @@ public class RemoteInterpreterTest {
     intpA.close();
     intpB.close();
 
-    RemoteInterpreterProcess process = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory process = intpA.getInterpreterConnectionFactory();
     assertFalse(process.isRunning());
   }
 
@@ -521,10 +521,10 @@ public class RemoteInterpreterTest {
         );
 
     intpA.setInterpreterGroup(intpGroup);
-    RemoteInterpreterProcess processA = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processA = intpA.getInterpreterConnectionFactory();
 
     intpA.setInterpreterGroup(new InterpreterGroup(intpA.getInterpreterGroup().getId()));
-    RemoteInterpreterProcess processB = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processB = intpA.getInterpreterConnectionFactory();
 
     assertNotSame(processA.hashCode(), processB.hashCode());
   }
@@ -543,13 +543,13 @@ public class RemoteInterpreterTest {
         );
 
     intpA.setInterpreterGroup(intpGroup);
-    RemoteInterpreterProcess processA = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processA = intpA.getInterpreterConnectionFactory();
     intpA.open();
 
     processA.dereference();    // intpA.close();
 
     intpA.setInterpreterGroup(new InterpreterGroup(intpA.getInterpreterGroup().getId()));
-    RemoteInterpreterProcess processB = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processB = intpA.getInterpreterConnectionFactory();
 
     assertNotSame(processA.hashCode(), processB.hashCode());
   }
@@ -568,11 +568,11 @@ public class RemoteInterpreterTest {
         );
 
     intpA.setInterpreterGroup(intpGroup);
-    RemoteInterpreterProcess processA = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processA = intpA.getInterpreterConnectionFactory();
     intpA.open();
 
     intpA.setInterpreterGroup(new InterpreterGroup(intpA.getInterpreterGroup().getId()));
-    RemoteInterpreterProcess processB = intpA.getInterpreterProcess();
+    InterpreterConnectionFactory processB = intpA.getInterpreterConnectionFactory();
 
     assertEquals(processA.hashCode(), processB.hashCode());
 

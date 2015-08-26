@@ -37,14 +37,14 @@ public class RemoteInterpreterEventPoller extends Thread {
 
   private volatile boolean shutdown;
 
-  private RemoteInterpreterProcess interpreterProcess;
+  private InterpreterConnectionFactory interpreterProcess;
   private InterpreterGroup interpreterGroup;
 
   public RemoteInterpreterEventPoller() {
     shutdown = false;
   }
 
-  public void setInterpreterProcess(RemoteInterpreterProcess interpreterProcess) {
+  public void setInterpreterProcess(InterpreterConnectionFactory interpreterProcess) {
     this.interpreterProcess = interpreterProcess;
   }
 

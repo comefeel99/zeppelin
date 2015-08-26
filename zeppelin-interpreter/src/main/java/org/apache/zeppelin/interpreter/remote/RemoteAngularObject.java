@@ -25,11 +25,11 @@ import org.apache.zeppelin.display.AngularObjectListener;
  */
 public class RemoteAngularObject extends AngularObject {
 
-  private transient RemoteInterpreterProcess remoteInterpreterProcess;
+  private transient InterpreterConnectionFactory remoteInterpreterProcess;
 
   RemoteAngularObject(String name, Object o, String noteId, String interpreterGroupId,
       AngularObjectListener listener,
-      RemoteInterpreterProcess remoteInterpreterProcess) {
+      InterpreterConnectionFactory remoteInterpreterProcess) {
     super(name, o, noteId, listener);
     this.remoteInterpreterProcess = remoteInterpreterProcess;
   }

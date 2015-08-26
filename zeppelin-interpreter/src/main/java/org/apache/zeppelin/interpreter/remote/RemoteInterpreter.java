@@ -49,32 +49,24 @@ import com.google.gson.reflect.TypeToken;
 public class RemoteInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(RemoteInterpreter.class);
   Gson gson = new Gson();
-  private String interpreterRunner;
-  private String interpreterPath;
   private String className;
   FormType formType;
   boolean initialized;
-  private Map<String, String> env;
-  static Map<String, RemoteInterpreterProcess> interpreterGroupReference
-    = new HashMap<String, RemoteInterpreterProcess>();
 
-  private int connectTimeout;
+  static Map<String, InterpreterConnectionFactory> interpreterGroupReference
+    = new HashMap<String, InterpreterConnectionFactory>();
+
+
+  private InterpreterProcess interpreterProcess;
 
   public RemoteInterpreter(Properties property,
       String className,
       String interpreterRunner,
       String interpreterPath,
       int connectTimeout) {
-    super(property);
-
-    this.className = className;
-    initialized = false;
-    this.interpreterRunner = interpreterRunner;
-    this.interpreterPath = interpreterPath;
-    env = new HashMap<String, String>();
-    this.connectTimeout = connectTimeout;
+    this(property, className, interpreterRunner, interpreterPath,
+        new HashMap<String, String>(), connectTimeout);
   }
-
   public RemoteInterpreter(Properties property,
       String className,
       String interpreterRunner,
@@ -82,11 +74,20 @@ public class RemoteInterpreter extends Interpreter {
       Map<String, String> env,
       int connectTimeout) {
     super(property);
+    this.interpreterProcess = new LocalInterpreterProcess(
+        interpreterRunner,
+        interpreterPath,
+        env,
+        connectTimeout);
     this.className = className;
-    this.interpreterRunner = interpreterRunner;
-    this.interpreterPath = interpreterPath;
-    this.env = env;
-    this.connectTimeout = connectTimeout;  
+  }
+  public RemoteInterpreter(Properties property,
+      String className,
+      String host,
+      int port) {
+    super(property);
+    this.className = className;
+    this.interpreterProcess = new RemoteInterpreterProcess(host, port);
   }
 
   @Override
@@ -94,13 +95,13 @@ public class RemoteInterpreter extends Interpreter {
     return className;
   }
 
-  public RemoteInterpreterProcess getInterpreterProcess() {
+  public InterpreterConnectionFactory getInterpreterConnectionFactory() {
     synchronized (interpreterGroupReference) {
       if (interpreterGroupReference.containsKey(getInterpreterGroupKey(getInterpreterGroup()))) {
-        RemoteInterpreterProcess interpreterProcess = interpreterGroupReference
+        InterpreterConnectionFactory connectionFactory = interpreterGroupReference
             .get(getInterpreterGroupKey(getInterpreterGroup()));
         try {
-          return interpreterProcess;
+          return connectionFactory;
         } catch (Exception e) {
           throw new InterpreterException(e);
         }
@@ -115,26 +116,26 @@ public class RemoteInterpreter extends Interpreter {
       return;
     }
 
-    RemoteInterpreterProcess interpreterProcess = null;
+    InterpreterConnectionFactory connectionFactory = null;
 
     synchronized (interpreterGroupReference) {
       if (interpreterGroupReference.containsKey(getInterpreterGroupKey(getInterpreterGroup()))) {
-        interpreterProcess = interpreterGroupReference
+        connectionFactory = interpreterGroupReference
             .get(getInterpreterGroupKey(getInterpreterGroup()));
       } else {
         throw new InterpreterException("Unexpected error");
       }
     }
 
-    int rc = interpreterProcess.reference(getInterpreterGroup());
+    int rc = connectionFactory.reference(getInterpreterGroup());
 
-    synchronized (interpreterProcess) {
+    synchronized (connectionFactory) {
       // when first process created
       if (rc == 1) {
         // create all interpreter class in this interpreter group
         Client client = null;
         try {
-          client = interpreterProcess.getClient();
+          client = connectionFactory.getClient();
         } catch (Exception e1) {
           throw new InterpreterException(e1);
         }
@@ -148,7 +149,7 @@ public class RemoteInterpreter extends Interpreter {
         } catch (TException e) {
           throw new InterpreterException(e);
         } finally {
-          interpreterProcess.releaseClient(client);
+          connectionFactory.releaseClient(client);
         }
       }
     }
@@ -164,37 +165,22 @@ public class RemoteInterpreter extends Interpreter {
 
   @Override
   public void close() {
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
-    Client client = null;
-    try {
-      client = interpreterProcess.getClient();
-    } catch (Exception e1) {
-      throw new InterpreterException(e1);
-    }
-
-    try {
-      client.close(className);
-    } catch (TException e) {
-      throw new InterpreterException(e);
-    } finally {
-      interpreterProcess.releaseClient(client);
-    }
-
-    interpreterProcess.dereference();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
+    connectionFactory.dereference();
   }
 
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
     FormType form = getFormType();
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     Client client = null;
     try {
-      client = interpreterProcess.getClient();
+      client = connectionFactory.getClient();
     } catch (Exception e1) {
       throw new InterpreterException(e1);
     }
 
-    InterpreterContextRunnerPool interpreterContextRunnerPool = interpreterProcess
+    InterpreterContextRunnerPool interpreterContextRunnerPool = connectionFactory
         .getInterpreterContextRunnerPool();
 
     List<InterpreterContextRunner> runners = context.getRunners();
@@ -228,16 +214,16 @@ public class RemoteInterpreter extends Interpreter {
     } catch (TException e) {
       throw new InterpreterException(e);
     } finally {
-      interpreterProcess.releaseClient(client);
+      connectionFactory.releaseClient(client);
     }
   }
 
   @Override
   public void cancel(InterpreterContext context) {
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     Client client = null;
     try {
-      client = interpreterProcess.getClient();
+      client = connectionFactory.getClient();
     } catch (Exception e1) {
       throw new InterpreterException(e1);
     }
@@ -247,7 +233,7 @@ public class RemoteInterpreter extends Interpreter {
     } catch (TException e) {
       throw new InterpreterException(e);
     } finally {
-      interpreterProcess.releaseClient(client);
+      connectionFactory.releaseClient(client);
     }
   }
 
@@ -260,10 +246,10 @@ public class RemoteInterpreter extends Interpreter {
       return formType;
     }
 
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     Client client = null;
     try {
-      client = interpreterProcess.getClient();
+      client = connectionFactory.getClient();
     } catch (Exception e1) {
       throw new InterpreterException(e1);
     }
@@ -274,16 +260,16 @@ public class RemoteInterpreter extends Interpreter {
     } catch (TException e) {
       throw new InterpreterException(e);
     } finally {
-      interpreterProcess.releaseClient(client);
+      connectionFactory.releaseClient(client);
     }
   }
 
   @Override
   public int getProgress(InterpreterContext context) {
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     Client client = null;
     try {
-      client = interpreterProcess.getClient();
+      client = connectionFactory.getClient();
     } catch (Exception e1) {
       throw new InterpreterException(e1);
     }
@@ -293,17 +279,17 @@ public class RemoteInterpreter extends Interpreter {
     } catch (TException e) {
       throw new InterpreterException(e);
     } finally {
-      interpreterProcess.releaseClient(client);
+      connectionFactory.releaseClient(client);
     }
   }
 
 
   @Override
   public List<String> completion(String buf, int cursor) {
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     Client client = null;
     try {
-      client = interpreterProcess.getClient();
+      client = connectionFactory.getClient();
     } catch (Exception e1) {
       throw new InterpreterException(e1);
     }
@@ -313,17 +299,17 @@ public class RemoteInterpreter extends Interpreter {
     } catch (TException e) {
       throw new InterpreterException(e);
     } finally {
-      interpreterProcess.releaseClient(client);
+      connectionFactory.releaseClient(client);
     }
   }
 
   @Override
   public Scheduler getScheduler() {
     int maxConcurrency = 10;
-    RemoteInterpreterProcess interpreterProcess = getInterpreterProcess();
+    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
     return SchedulerFactory.singleton().createOrGetRemoteScheduler(
         "remoteinterpreter_" + interpreterProcess.hashCode(),
-        getInterpreterProcess(),
+        getInterpreterConnectionFactory(),
         maxConcurrency);
   }
 
@@ -333,20 +319,16 @@ public class RemoteInterpreter extends Interpreter {
     super.setInterpreterGroup(interpreterGroup);
 
     synchronized (interpreterGroupReference) {
-      RemoteInterpreterProcess intpProcess = interpreterGroupReference
+      InterpreterConnectionFactory connectionFactory = interpreterGroupReference
           .get(getInterpreterGroupKey(interpreterGroup));
 
       // when interpreter process is not created or terminated
-      if (intpProcess == null || (!intpProcess.isRunning() && intpProcess.getPort() > 0)
-          || (!intpProcess.isRunning() && intpProcess.getPort() == -1)) {
+      if (connectionFactory == null || !connectionFactory.isRunning()) {
         interpreterGroupReference.put(getInterpreterGroupKey(interpreterGroup),
-            new RemoteInterpreterProcess(interpreterRunner,
-                interpreterPath, env, connectTimeout));
-
-        logger.info("setInterpreterGroup = "
-            + getInterpreterGroupKey(interpreterGroup) + " class=" + className
-            + ", path=" + interpreterPath);
+              new InterpreterConnectionFactory(interpreterProcess));
       }
+      logger.info("setInterpreterGroup = "
+          + getInterpreterGroupKey(interpreterGroup) + " class=" + className);
     }
   }
 

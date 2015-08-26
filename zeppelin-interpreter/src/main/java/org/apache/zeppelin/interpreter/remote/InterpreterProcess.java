@@ -14,42 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.zeppelin.interpreter;
+package org.apache.zeppelin.interpreter.remote;
 
 /**
- *
+ * Interface for managing interpreter process creation/termination
  */
-public class InterpreterOption {
-  boolean remote;
-  String host = null;
-  int port = -1;
-
-  public InterpreterOption() {
-    remote = false;
-  }
-
-  public InterpreterOption(boolean remote) {
-    this.remote = remote;
-  }
-
-  public boolean isRemote() {
-    return remote;
-  }
-
-  public void setRemote(boolean remote) {
-    this.remote = remote;
-  }
-
-  public boolean isConnectExistingProcess() {
-    return (host != null && port != -1);
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
+public interface InterpreterProcess {
+  public void start();
+  public void stop();
+  public String getHost();
+  public int getPort();
+  public boolean isRunning();
 }

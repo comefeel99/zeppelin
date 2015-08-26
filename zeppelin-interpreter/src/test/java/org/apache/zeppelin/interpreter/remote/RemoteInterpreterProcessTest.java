@@ -14,56 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.zeppelin.interpreter.remote;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.zeppelin.interpreter.InterpreterGroup;
-import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
 import org.junit.Test;
 
 public class RemoteInterpreterProcessTest {
 
   @Test
-  public void testStartStop() {
-    InterpreterGroup intpGroup = new InterpreterGroup();
-    RemoteInterpreterProcess rip = new RemoteInterpreterProcess(
+  public void testIsRunning() throws IOException {
+    RemoteInterpreterProcess notAccessible = new RemoteInterpreterProcess(
+        "localhost",
+        RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces());
+    assertFalse(notAccessible.isRunning());
+
+    // start external process
+    LocalInterpreterProcess process = new LocalInterpreterProcess(
         "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(),
         10 * 1000);
-    assertFalse(rip.isRunning());
-    assertEquals(0, rip.referenceCount());
-    assertEquals(1, rip.reference(intpGroup));
-    assertEquals(2, rip.reference(intpGroup));
-    assertEquals(true, rip.isRunning());
-    assertEquals(1, rip.dereference());
-    assertEquals(true, rip.isRunning());
-    assertEquals(0, rip.dereference());
-    assertEquals(false, rip.isRunning());
+    process.start();
+
+    // configure use external process
+    RemoteInterpreterProcess accessible = new RemoteInterpreterProcess(
+        process.getHost(),
+        process.getPort());
+    assertTrue(accessible.isRunning());
+
+    process.stop();
+
+    assertFalse(accessible.isRunning());
   }
 
-  @Test
-  public void testClientFactory() throws Exception {
-    InterpreterGroup intpGroup = new InterpreterGroup();
-    RemoteInterpreterProcess rip = new RemoteInterpreterProcess(
-        "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(),
-        mock(RemoteInterpreterEventPoller.class), 10 * 1000);
-    rip.reference(intpGroup);
-    assertEquals(0, rip.getNumActiveClient());
-    assertEquals(0, rip.getNumIdleClient());
-
-    Client client = rip.getClient();
-    assertEquals(1, rip.getNumActiveClient());
-    assertEquals(0, rip.getNumIdleClient());
-
-    rip.releaseClient(client);
-    assertEquals(0, rip.getNumActiveClient());
-    assertEquals(1, rip.getNumIdleClient());
-
-    rip.dereference();
-  }
 }

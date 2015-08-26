@@ -137,7 +137,7 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
     Thread.sleep(500); // waitFor eventpoller pool event
     String[] result = ret.message().split(" ");
     assertEquals("0", result[0]); // size of registry
-    
+
     // create object
     ret = intp.interpret("add n1 v1", context);
     Thread.sleep(500);
@@ -162,11 +162,11 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
     Thread.sleep(500); // waitFor eventpoller pool event
     String[] result = ret.message().split(" ");
     assertEquals("0", result[0]); // size of registry
-    
+
     // create object
     localRegistry.addAndNotifyRemoteProcess("n1", "v1", "note");
-    
-    // get from remote registry 
+
+    // get from remote registry
     ret = intp.interpret("get", context);
     Thread.sleep(500); // waitFor eventpoller pool event
     result = ret.message().split(" ");

@@ -15,41 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.zeppelin.interpreter;
+package org.apache.zeppelin.interpreter.remote;
 
 /**
- *
+ * Trying not to get interpreter connection. for not disturbing test counts number connection.
  */
-public class InterpreterOption {
-  boolean remote;
-  String host = null;
-  int port = -1;
+public class MockRemoteInterpreterEventPoller extends RemoteInterpreterEventPoller {
 
-  public InterpreterOption() {
-    remote = false;
+  @Override
+  public void run() {
+    return;
   }
 
-  public InterpreterOption(boolean remote) {
-    this.remote = remote;
-  }
-
-  public boolean isRemote() {
-    return remote;
-  }
-
-  public void setRemote(boolean remote) {
-    this.remote = remote;
-  }
-
-  public boolean isConnectExistingProcess() {
-    return (host != null && port != -1);
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
 }

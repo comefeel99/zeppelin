@@ -72,7 +72,7 @@ public class RemoteSchedulerTest {
     intpA.open();
 
     Scheduler scheduler = schedulerSvc.createOrGetRemoteScheduler("test",
-        intpA.getInterpreterProcess(),
+        intpA.getInterpreterConnectionFactory(),
         10);
 
     Job job = new Job("jobId", "jobName", null, 200) {

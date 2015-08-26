@@ -68,7 +68,6 @@ angular.module('zeppelinWebApp').controller('InterpreterCtrl', function($scope, 
       properties : angular.copy($scope.interpreterSettings[index].properties),
     };
 
-
     $http.put(baseUrlSrv.getRestApiBase() + '/interpreter/setting/' + settingId, request).
     success(function(data, status, headers, config) {
       $scope.interpreterSettings[index] = data.body;
@@ -169,7 +168,12 @@ angular.module('zeppelinWebApp').controller('InterpreterCtrl', function($scope, 
     $scope.newInterpreterSetting = {
       name : undefined,
       group : undefined,
-      option : { remote : true },
+      // corresponding class : org.apache.zeppelin.interpreter.InterpreterOption
+      option : {
+        remote : true,
+        host : undefined,
+        port : -1
+      },
       properties : {}
     };
     emptyNewProperty($scope.newInterpreterSetting);

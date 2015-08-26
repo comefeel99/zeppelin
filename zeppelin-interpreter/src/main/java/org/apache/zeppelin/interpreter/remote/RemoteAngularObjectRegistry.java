@@ -45,7 +45,7 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
     this.interpreterGroup = interpreterGroup;
   }
 
-  private RemoteInterpreterProcess getRemoteInterpreterProcess() {
+  private InterpreterConnectionFactory getRemoteInterpreterProcess() {
     if (interpreterGroup.size() == 0) {
       throw new RuntimeException("Can't get remoteInterpreterProcess");
     }
@@ -55,7 +55,7 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
     }
 
     if (p instanceof RemoteInterpreter) {
-      return ((RemoteInterpreter) p).getInterpreterProcess();
+      return ((RemoteInterpreter) p).getInterpreterConnectionFactory();
     } else {
       throw new RuntimeException("Can't get remoteInterpreterProcess");
     }
@@ -71,21 +71,21 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
    */
   public AngularObject addAndNotifyRemoteProcess(String name, Object o, String noteId) {
     Gson gson = new Gson();
-    RemoteInterpreterProcess remoteInterpreterProcess = getRemoteInterpreterProcess();
-    if (!remoteInterpreterProcess.isRunning()) {
+    InterpreterConnectionFactory connectionFactory = getRemoteInterpreterProcess();
+    if (!connectionFactory.isRunning()) {
       return null;
     }
 
     Client client = null;
     try {
-      client = remoteInterpreterProcess.getClient();
+      client = connectionFactory.getClient();
       client.angularObjectAdd(name, noteId, gson.toJson(o));
       return super.add(name, o, noteId, true);
     } catch (Exception e) {
       logger.error("Error", e);
     } finally {
       if (client != null) {
-        remoteInterpreterProcess.releaseClient(client);
+        connectionFactory.releaseClient(client);
       }
     }
     return null;
@@ -100,26 +100,26 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
    * @return
    */
   public AngularObject removeAndNotifyRemoteProcess(String name, String noteId) {
-    RemoteInterpreterProcess remoteInterpreterProcess = getRemoteInterpreterProcess();
-    if (!remoteInterpreterProcess.isRunning()) {
+    InterpreterConnectionFactory connectionFactory = getRemoteInterpreterProcess();
+    if (!connectionFactory.isRunning()) {
       return null;
     }
 
     Client client = null;
     try {
-      client = remoteInterpreterProcess.getClient();
+      client = connectionFactory.getClient();
       client.angularObjectRemove(name, noteId);
       return super.remove(name, noteId);
     } catch (Exception e) {
       logger.error("Error", e);
     } finally {
       if (client != null) {
-        remoteInterpreterProcess.releaseClient(client);
+        connectionFactory.releaseClient(client);
       }
     }
     return null;
   }
-  
+
   public void removeAllAndNotifyRemoteProcess(String noteId) {
     List<AngularObject> all = getAll(noteId);
     for (AngularObject ao : all) {
@@ -129,7 +129,7 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
 
   @Override
   protected AngularObject createNewAngularObject(String name, Object o, String noteId) {
-    RemoteInterpreterProcess remoteInterpreterProcess = getRemoteInterpreterProcess();
+    InterpreterConnectionFactory remoteInterpreterProcess = getRemoteInterpreterProcess();
     if (remoteInterpreterProcess == null) {
       throw new RuntimeException("Remote Interpreter process not found");
     }

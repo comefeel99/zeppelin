@@ -383,9 +383,14 @@ public class InterpreterFactory {
           Interpreter intp;
 
           if (option.isRemote()) {
-            intp = createRemoteRepl(info.getPath(),
-                info.getClassName(),
-                properties);
+            if (option.isConnectExistingProcess()) {
+              intp = connectToRemoteRepl(info.getClassName(), properties,
+                  option.getHost(), option.getPort());
+            } else {
+              intp = createRemoteRepl(info.getPath(),
+                  info.getClassName(),
+                  properties);
+            }
           } else {
             intp = createRepl(info.getPath(),
                 info.getClassName(),
@@ -631,7 +636,6 @@ public class InterpreterFactory {
 
   private Interpreter createRemoteRepl(String interpreterPath, String className,
       Properties property) {
-
     int connectTimeout = conf.getInt(ConfVars.ZEPPELIN_INTERPRETER_CONNECT_TIMEOUT);
     LazyOpenInterpreter intp = new LazyOpenInterpreter(new RemoteInterpreter(
         property, className, conf.getInterpreterRemoteRunnerPath(),
@@ -639,6 +643,12 @@ public class InterpreterFactory {
     return intp;
   }
 
+  private Interpreter connectToRemoteRepl(String className,
+      Properties property, String host, int port) {
+    LazyOpenInterpreter intp = new LazyOpenInterpreter(new RemoteInterpreter(
+        property, className, host, port));
+    return intp;
+  }
 
   private URL[] recursiveBuildLibList(File path) throws MalformedURLException {
     URL[] urls = new URL[0];

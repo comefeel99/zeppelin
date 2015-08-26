@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.thrift.TException;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
-import org.apache.zeppelin.interpreter.remote.RemoteInterpreterProcess;
+import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.slf4j.Logger;
@@ -44,10 +44,10 @@ public class RemoteScheduler implements Scheduler {
   boolean terminate = false;
   private String name;
   private int maxConcurrency;
-  private RemoteInterpreterProcess interpreterProcess;
+  private InterpreterConnectionFactory interpreterProcess;
 
   public RemoteScheduler(String name, ExecutorService executor,
-      RemoteInterpreterProcess interpreterProcess, SchedulerListener listener,
+      InterpreterConnectionFactory interpreterProcess, SchedulerListener listener,
       int maxConcurrency) {
     this.name = name;
     this.executor = executor;
