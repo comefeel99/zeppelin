@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.zeppelin.interpreter;
+package org.apache.zeppelin.dev;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.Interpreter;
+import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.interpreter.InterpreterContextRunner;
+import org.apache.zeppelin.interpreter.InterpreterException;
+import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
+import org.apache.zeppelin.interpreter.InterpreterResult;
 
 /**
  * Dummy interpreter to support development mode for Zeppelin app
@@ -33,8 +39,16 @@ public class DevInterpreter extends Interpreter {
         new InterpreterPropertyBuilder().build());
   }
 
-  public DevInterpreter(Properties property) {
+  private InterpreterEvent interpreterEvent;
+  private InterpreterContext context;
+
+  public static interface InterpreterEvent {
+    public InterpreterResult interpret(String st, InterpreterContext context);
+  }
+
+  public DevInterpreter(Properties property, InterpreterEvent interpreterEvent) {
     super(property);
+    this.interpreterEvent = interpreterEvent;
   }
 
   @Override
@@ -45,9 +59,22 @@ public class DevInterpreter extends Interpreter {
   public void close() {
   }
 
+  public void rerun() {
+    for (InterpreterContextRunner r : context.getRunners()) {
+      if (context.getParagraphId().equals(r.getParagraphId())) {
+        r.run();
+      }
+    }
+  }
+
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
-    return new InterpreterResult(Code.SUCCESS, "");
+    this.context = context;
+    try {
+      return interpreterEvent.interpret(st, context);
+    } catch (Exception e) {
+      throw new InterpreterException(e);
+    }
   }
 
   @Override
@@ -66,7 +93,11 @@ public class DevInterpreter extends Interpreter {
 
   @Override
   public List<String> completion(String buf, int cursor) {
-    return null;
+    return new LinkedList<String>();
+  }
+
+  public InterpreterContext getLastInterpretContext() {
+    return context;
   }
 
 }
