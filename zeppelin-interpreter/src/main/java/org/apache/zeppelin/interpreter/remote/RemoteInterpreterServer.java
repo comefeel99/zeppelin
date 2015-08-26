@@ -90,6 +90,7 @@ public class RemoteInterpreterServer
     TServerSocket serverTransport = new TServerSocket(port);
     server = new TThreadPoolServer(
         new TThreadPoolServer.Args(serverTransport).processor(processor));
+
   }
 
   @Override
@@ -148,7 +149,6 @@ public class RemoteInterpreterServer
         interpreterGroup.add(new LazyOpenInterpreter(
             new ClassloaderInterpreter(repl, cl)));
       }
-
       logger.info("Instantiate interpreter {}", className);
       repl.setInterpreterGroup(interpreterGroup);
     } catch (ClassNotFoundException | NoSuchMethodException | SecurityException
@@ -159,7 +159,7 @@ public class RemoteInterpreterServer
     }
   }
 
-  private Interpreter getInterpreter(String className) throws TException {
+  protected Interpreter getInterpreter(String className) throws TException {
     synchronized (interpreterGroup) {
       for (Interpreter inp : interpreterGroup) {
         if (inp.getClassName().equals(className)) {
@@ -274,7 +274,24 @@ public class RemoteInterpreterServer
     @Override
     protected Object jobRun() throws Throwable {
       InterpreterResult result = interpreter.interpret(script, context);
-      return result;
+
+      // add InterpreterOutput a head of the message
+      String message = null;
+
+      byte[] interpreterOutput = context.out.toByteArray();
+      if (interpreterOutput != null) {
+        message = new String(interpreterOutput);
+      }
+
+      if (result.message() != null) {
+        if (message == null) {
+          message = result.message();
+        } else {
+          message += result.message();
+        }
+      }
+
+      return new InterpreterResult(result.code(), result.type(), message);
     }
 
     @Override

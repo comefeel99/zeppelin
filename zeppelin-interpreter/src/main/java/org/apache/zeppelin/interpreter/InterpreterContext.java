@@ -32,9 +32,11 @@ public class InterpreterContext {
   private final String paragraphId;
   private final String paragraphText;
   private final Map<String, Object> config;
+  public final InterpreterOutput out;
   private GUI gui;
   private AngularObjectRegistry angularObjectRegistry;
   private List<InterpreterContextRunner> runners;
+
 
   public InterpreterContext(String noteId,
                             String paragraphId,
@@ -53,9 +55,10 @@ public class InterpreterContext {
     this.gui = gui;
     this.angularObjectRegistry = angularObjectRegistry;
     this.runners = runners;
+    out = new InterpreterOutput();
   }
 
-  
+
   public String getNoteId() {
     return noteId;
   }
@@ -88,4 +91,37 @@ public class InterpreterContext {
     return runners;
   }
 
+
+
+  // Thread local variable containing each thread's ID
+  private static final ThreadLocal<InterpreterContext> threadLocalInterpreterContexts =
+      new ThreadLocal<InterpreterContext>() {
+
+      @Override
+      protected InterpreterContext initialValue() {
+        return null;
+      }
+    };
+
+  /**
+   * Return interpretercontext that can associated with current thread
+   * @return
+   */
+  public static InterpreterContext getCurrentInterpreterContext() {
+    return threadLocalInterpreterContexts.get();
+  }
+
+  /**
+   * Associate interpretercontext with current thread
+   */
+  public static void setCurrentInterpreterContext(InterpreterContext context) {
+    threadLocalInterpreterContexts.set(context);
+  }
+
+  /**
+   * Associate interpretercontext with current thread
+   */
+  public static void removeCurrentInterpreterContext() {
+    threadLocalInterpreterContexts.remove();
+  }
 }
