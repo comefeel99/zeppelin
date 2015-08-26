@@ -278,7 +278,7 @@ public class RemoteInterpreterServer
       // add InterpreterOutput a head of the message
       String message = null;
 
-      byte[] interpreterOutput = context.out.toByteArray();
+      byte[] interpreterOutput = context.out.toByteArray(true);
       if (interpreterOutput != null) {
         message = new String(interpreterOutput);
       }

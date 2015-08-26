@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.zeppelin.dev;
+package org.apache.zeppelin.interpreter.dev;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -42,8 +42,15 @@ public class DevInterpreter extends Interpreter {
   private InterpreterEvent interpreterEvent;
   private InterpreterContext context;
 
+  /**
+   * event handler for ZeppelinApplicationDevServer
+   */
   public static interface InterpreterEvent {
     public InterpreterResult interpret(String st, InterpreterContext context);
+  }
+
+  public DevInterpreter(Properties property) {
+    super(property);
   }
 
   public DevInterpreter(Properties property, InterpreterEvent interpreterEvent) {

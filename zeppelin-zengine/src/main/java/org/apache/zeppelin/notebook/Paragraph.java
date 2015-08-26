@@ -209,7 +209,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
     // add InterpreterOutput a head of the message
     String message = null;
 
-    byte[] interpreterOutput = getInterpreterContext().out.toByteArray();
+    byte[] interpreterOutput = getInterpreterContext().out.toByteArray(true);
+
     if (interpreterOutput != null) {
       message = new String(interpreterOutput);
     }

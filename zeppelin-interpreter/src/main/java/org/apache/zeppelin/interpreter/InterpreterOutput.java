@@ -76,6 +76,10 @@ public class InterpreterOutput extends OutputStream {
   }
 
   public byte[] toByteArray() throws IOException {
+    return toByteArray(false);
+  }
+
+  public byte[] toByteArray(boolean clear) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
     synchronized (outList) {
@@ -92,6 +96,10 @@ public class InterpreterOutput extends OutputStream {
         } else {
           // can not handle the object
         }
+      }
+
+      if (clear) {
+        clear();
       }
     }
     out.close();

@@ -14,20 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.zeppelin.dev;
+package org.apache.zeppelin.interpreter.dev;
 
 import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.thrift.TException;
-import org.apache.zeppelin.dev.DevInterpreter.InterpreterEvent;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.dev.DevInterpreter.InterpreterEvent;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer;
 
+/**
+ *
+ */
 public abstract class ZeppelinApplicationDevServer extends
     RemoteInterpreterServer implements InterpreterEvent {
   public static final int DEFAULT_TEST_INTERPRETER_PORT = 29914;
@@ -79,7 +82,7 @@ public abstract class ZeppelinApplicationDevServer extends
     synchronized (this) {
       while (!isConnected()) {
         try {
-          this.wait(10*1000);
+          this.wait(10 * 1000);
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
