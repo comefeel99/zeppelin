@@ -40,6 +40,7 @@ public abstract class ZeppelinApplicationDevServer extends
   public static final int DEFAULT_TEST_INTERPRETER_PORT = 29914;
 
   DevInterpreter interpreter = null;
+  InterpreterOutput out = null;
 
   public ZeppelinApplicationDevServer(int port) throws TException {
     super(port);
@@ -59,13 +60,15 @@ public abstract class ZeppelinApplicationDevServer extends
 
   @Override
   protected InterpreterOutput createInterpreterOutput() {
-    try {
-      return new InterpreterOutput(this);
-    } catch (IOException e) {
-      e.printStackTrace();
-      // fall back to normal one
-      return new InterpreterOutput();
+    if (out == null) {
+      try {
+        out =  new InterpreterOutput(this);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
+
+    return out;
   }
 
   @Override

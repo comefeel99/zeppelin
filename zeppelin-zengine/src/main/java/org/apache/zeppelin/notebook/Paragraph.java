@@ -211,19 +211,19 @@ public class Paragraph extends Job implements Serializable, Cloneable {
 
     byte[] interpreterOutput = getInterpreterContext().out.toByteArray(true);
 
-    if (interpreterOutput != null) {
+    if (interpreterOutput != null && interpreterOutput.length > 0) {
+      // something printed in InterpreterOutput
       message = new String(interpreterOutput);
-    }
 
-    if (ret.message() != null) {
-      if (message == null) {
-        message = ret.message();
-      } else {
+      if (ret.message() != null) {
         message += ret.message();
       }
-    }
 
-    return new InterpreterResult(ret.code(), message);
+      return new InterpreterResult(ret.code(), message);
+    } else {
+      // remote interpreter or InterpreterOutput is empty
+      return ret;
+    }
   }
 
   @Override
