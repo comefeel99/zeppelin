@@ -254,7 +254,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
             this.getConfig(),
             this.settings,
             registry,
-            runners);
+            runners,
+            new InterpreterOutput());
     return interpreterContext;
   }
 

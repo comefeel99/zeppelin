@@ -42,6 +42,7 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.LazyOpenInterpreter;
@@ -121,7 +122,7 @@ public class RemoteInterpreterServer
 
 
   public static void main(String[] args)
-      throws TTransportException, InterruptedException {
+      throws Exception {
     int port = Integer.parseInt(args[0]);
     RemoteInterpreterServer remoteInterpreterServer = new RemoteInterpreterServer(port);
     remoteInterpreterServer.start();
@@ -278,7 +279,7 @@ public class RemoteInterpreterServer
       // add InterpreterOutput a head of the message
       String message = null;
 
-      byte[] interpreterOutput = context.out.toByteArray(true);
+      byte[] interpreterOutput = context.out.toByteArray(clearInterpreterOutput());
       if (interpreterOutput != null) {
         message = new String(interpreterOutput);
       }
@@ -298,6 +299,10 @@ public class RemoteInterpreterServer
     protected boolean jobAbort() {
       return false;
     }
+  }
+
+  protected boolean clearInterpreterOutput() {
+    return true;
   }
 
 
@@ -346,7 +351,12 @@ public class RemoteInterpreterServer
             new TypeToken<Map<String, Object>>() {}.getType()),
         gson.fromJson(ric.getGui(), GUI.class),
         interpreterGroup.getAngularObjectRegistry(),
-        contextRunners);
+        contextRunners,
+        createInterpreterOutput());
+  }
+
+  protected InterpreterOutput createInterpreterOutput() {
+    return new InterpreterOutput();
   }
 
 

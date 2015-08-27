@@ -32,14 +32,24 @@ import java.util.List;
 public class InterpreterOutput extends OutputStream {
 
   private final List<Object> outList = new LinkedList<Object>();
+  private InterpreterOutputChangeWatcher watcher;
 
   public InterpreterOutput() {
     clear();
   }
 
+  public InterpreterOutput(InterpreterOutputChangeListener listener) throws IOException {
+    clear();
+    watcher = new InterpreterOutputChangeWatcher(listener);
+    watcher.start();
+  }
+
   public void clear() {
     synchronized (outList) {
       outList.clear();
+      if (watcher != null) {
+        watcher.clear();
+      }
     }
   }
 
@@ -70,9 +80,13 @@ public class InterpreterOutput extends OutputStream {
   /**
    * In dev mode, it monitors file and update ZeppelinServer
    * @param file
+   * @throws IOException
    */
-  public void write(File file) {
+  public void write(File file) throws IOException {
     outList.add(file);
+    if (watcher != null) {
+      watcher.watch(file);
+    }
   }
 
   public byte[] toByteArray() throws IOException {
@@ -117,6 +131,14 @@ public class InterpreterOutput extends OutputStream {
       } else {
         out.write(buffer, 0, bytesRead);
       }
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (watcher != null) {
+      watcher.clear();
+      watcher.shutdown();
     }
   }
 

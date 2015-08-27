@@ -45,7 +45,8 @@ public class InterpreterContext {
                             Map<String, Object> config,
                             GUI gui,
                             AngularObjectRegistry angularObjectRegistry,
-                            List<InterpreterContextRunner> runners
+                            List<InterpreterContextRunner> runners,
+                            InterpreterOutput out
                             ) {
     this.noteId = noteId;
     this.paragraphId = paragraphId;
@@ -55,7 +56,7 @@ public class InterpreterContext {
     this.gui = gui;
     this.angularObjectRegistry = angularObjectRegistry;
     this.runners = runners;
-    out = new InterpreterOutput();
+    this.out = out;
   }
 
 
@@ -124,4 +125,5 @@ public class InterpreterContext {
   public static void removeCurrentInterpreterContext() {
     threadLocalInterpreterContexts.remove();
   }
+
 }

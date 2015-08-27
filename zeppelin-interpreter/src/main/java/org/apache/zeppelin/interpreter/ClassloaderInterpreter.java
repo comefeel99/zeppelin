@@ -53,6 +53,7 @@ public class ClassloaderInterpreter
   public InterpreterResult interpret(String st, InterpreterContext context) {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(cl);
+    InterpreterContext.setCurrentInterpreterContext(context);
     try {
       return intp.interpret(st, context);
     } catch (InterpreterException e) {
@@ -60,6 +61,7 @@ public class ClassloaderInterpreter
     } catch (Exception e) {
       throw new InterpreterException(e);
     } finally {
+      InterpreterContext.removeCurrentInterpreterContext();
       cl = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(oldcl);
     }
@@ -98,11 +100,13 @@ public class ClassloaderInterpreter
   public void cancel(InterpreterContext context) {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(cl);
+    InterpreterContext.setCurrentInterpreterContext(context);
     try {
       intp.cancel(context);
     } catch (Exception e) {
       throw new InterpreterException(e);
     } finally {
+      InterpreterContext.removeCurrentInterpreterContext();
       cl = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(oldcl);
     }
@@ -126,11 +130,13 @@ public class ClassloaderInterpreter
   public int getProgress(InterpreterContext context) {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(cl);
+    InterpreterContext.setCurrentInterpreterContext(context);
     try {
       return intp.getProgress(context);
     } catch (Exception e) {
       throw new InterpreterException(e);
     } finally {
+      InterpreterContext.removeCurrentInterpreterContext();
       cl = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(oldcl);
     }

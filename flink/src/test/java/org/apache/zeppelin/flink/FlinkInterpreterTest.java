@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Properties;
 
 import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.junit.AfterClass;
@@ -38,7 +39,7 @@ public class FlinkInterpreterTest {
     Properties p = new Properties();
     flink = new FlinkInterpreter(p);
     flink.open();
-    context = new InterpreterContext(null, null, null, null, null, null, null, null);
+    context = new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput());
   }
 
   @AfterClass
@@ -57,7 +58,7 @@ public class FlinkInterpreterTest {
   @Test
   public void testNextlineInvoke() {
     InterpreterResult result = flink.interpret("\"123\"\n  .toInt", context);
-    assertEquals("res0: Int = 123\n", result.message());    
+    assertEquals("res0: Int = 123\n", result.message());
   }
 
   @Test

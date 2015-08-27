@@ -18,6 +18,7 @@
 package org.apache.zeppelin.interpreter.remote;
 
 import com.google.gson.Gson;
+
 import org.apache.thrift.TException;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
@@ -37,15 +38,15 @@ public class RemoteInterpreterEventPoller extends Thread {
 
   private volatile boolean shutdown;
 
-  private InterpreterConnectionFactory interpreterProcess;
+  private InterpreterConnectionFactory connectionFactory;
   private InterpreterGroup interpreterGroup;
 
   public RemoteInterpreterEventPoller() {
     shutdown = false;
   }
 
-  public void setInterpreterProcess(InterpreterConnectionFactory interpreterProcess) {
-    this.interpreterProcess = interpreterProcess;
+  public void setInterpreterProcess(InterpreterConnectionFactory connectionFactory) {
+    this.connectionFactory = connectionFactory;
   }
 
   public void setInterpreterGroup(InterpreterGroup interpreterGroup) {
@@ -57,8 +58,17 @@ public class RemoteInterpreterEventPoller extends Thread {
     Client client = null;
 
     while (!shutdown) {
+      // wait and retry
+      if (!connectionFactory.isRunning()) {
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+        continue;
+      }
+
       try {
-        client = interpreterProcess.getClient();
+        client = connectionFactory.getClient();
       } catch (Exception e1) {
         logger.error("Can't get RemoteInterpreterEvent", e1);
         waitQuietly();
@@ -72,9 +82,9 @@ public class RemoteInterpreterEventPoller extends Thread {
         logger.error("Can't get RemoteInterpreterEvent", e);
         waitQuietly();
         continue;
+      } finally {
+        connectionFactory.releaseClient(client);
       }
-
-      interpreterProcess.releaseClient(client);
 
       Gson gson = new Gson();
 
@@ -106,7 +116,7 @@ public class RemoteInterpreterEventPoller extends Thread {
           InterpreterContextRunner runnerFromRemote = gson.fromJson(
               event.getData(), RemoteInterpreterContextRunner.class);
 
-          interpreterProcess.getInterpreterContextRunnerPool().run(
+          connectionFactory.getInterpreterContextRunnerPool().run(
               runnerFromRemote.getNoteId(), runnerFromRemote.getParagraphId());
         }
         logger.debug("Event from remoteproceess {}", event.getType());

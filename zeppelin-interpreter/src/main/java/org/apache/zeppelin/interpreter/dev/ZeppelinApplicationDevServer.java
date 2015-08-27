@@ -16,13 +16,17 @@
  */
 package org.apache.zeppelin.interpreter.dev;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.thrift.TException;
+import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
+import org.apache.zeppelin.interpreter.InterpreterOutput;
+import org.apache.zeppelin.interpreter.InterpreterOutputChangeListener;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.dev.DevInterpreter.InterpreterEvent;
@@ -32,7 +36,7 @@ import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer;
  *
  */
 public abstract class ZeppelinApplicationDevServer extends
-    RemoteInterpreterServer implements InterpreterEvent {
+    RemoteInterpreterServer implements InterpreterEvent, InterpreterOutputChangeListener {
   public static final int DEFAULT_TEST_INTERPRETER_PORT = 29914;
 
   DevInterpreter interpreter = null;
@@ -50,25 +54,44 @@ public abstract class ZeppelinApplicationDevServer extends
       }
       notify();
     }
-    return interpreter;
+    return new ClassloaderInterpreter(interpreter, this.getClass().getClassLoader());
   }
 
+  @Override
+  protected InterpreterOutput createInterpreterOutput() {
+    try {
+      return new InterpreterOutput(this);
+    } catch (IOException e) {
+      e.printStackTrace();
+      // fall back to normal one
+      return new InterpreterOutput();
+    }
+  }
 
+  @Override
+  public void fileChanged(File file) {
+    refresh();
+  }
+
+  @Override
+  public boolean clearInterpreterOutput() {
+    return false;
+  }
 
   /**
    * execute application. This will be called when you run %dev paragraph in Zeppelin
+   * @throws Exception
    */
-  protected abstract void onInterpret();
+  protected abstract void onInterpret() throws Exception;
 
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
     try {
       onInterpret();
-      String output = new String(context.out.toByteArray());
-      return new InterpreterResult(Code.SUCCESS, output);
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new InterpreterException(e);
     }
+    return new InterpreterResult(Code.SUCCESS, "");
   }
 
   public void refresh() {
