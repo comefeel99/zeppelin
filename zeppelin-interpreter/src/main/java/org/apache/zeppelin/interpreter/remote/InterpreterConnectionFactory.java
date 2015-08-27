@@ -69,10 +69,11 @@ public class InterpreterConnectionFactory implements ExecuteResultHandler {
       if (clientPool == null) {
         clientPool = new GenericObjectPool<Client>(new ClientFactory(
             interpreterProcess.getHost(), interpreterProcess.getPort()));
-
+        clientPool.setTestOnReturn(true);
         remoteInterpreterEventPoller.setInterpreterGroup(interpreterGroup);
         remoteInterpreterEventPoller.setInterpreterProcess(this);
         remoteInterpreterEventPoller.start();
+
       }
 
       return referenceCount.incrementAndGet();

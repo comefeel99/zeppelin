@@ -81,6 +81,7 @@ public class RemoteInterpreterEventPoller extends Thread {
       } catch (TException e) {
         logger.error("Can't get RemoteInterpreterEvent", e);
         waitQuietly();
+        client.getOutputProtocol().getTransport().close();
         continue;
       } finally {
         connectionFactory.releaseClient(client);
