@@ -292,7 +292,7 @@ public class RemoteInterpreterServer
         }
       }
 
-      return new InterpreterResult(result.code(), result.type(), message);
+      return new InterpreterResult(result.code(), message);
     }
 
     @Override

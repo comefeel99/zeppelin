@@ -223,7 +223,7 @@ public class Paragraph extends Job implements Serializable, Cloneable {
       }
     }
 
-    return new InterpreterResult(ret.code(), ret.type(), message);
+    return new InterpreterResult(ret.code(), message);
   }
 
   @Override
