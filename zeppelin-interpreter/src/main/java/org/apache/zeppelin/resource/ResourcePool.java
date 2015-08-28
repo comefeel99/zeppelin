@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  */
 public class ResourcePool {
   Map<ResourceInfo, Object> localPool;
-  static final String LOCATION_ANY = "";
+  static final String LOCATION_ANY = "*";
   static final String NAME_ANY = "*";
   private final String id;
   private ResourcePoolEventHandler resourcePoolEventHandler;
@@ -93,7 +93,7 @@ public class ResourcePool {
   }
   public Collection<ResourceInfo> search(String resourcePoolId, String namePattern) {
     List<ResourceInfo> info = new LinkedList<ResourceInfo>();
-    if (resourcePoolId.equals(id) || resourcePoolId.equals(LOCATION_ANY)) { // search locally
+    if (resourcePoolId.equals(id)) { // search locally
       for (ResourceInfo r :localPool.keySet()) {
         if (match(getId(), namePattern, r)) {
           info.add(r);
