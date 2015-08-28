@@ -101,7 +101,14 @@ public class ResourcePool {
       }
       return info;
     } else {
-      return resourcePoolEventHandler.resourcePoolSearch(resourcePoolId, namePattern);
+      Collection<ResourceInfo> globalInfo = resourcePoolEventHandler.resourcePoolSearch(
+          resourcePoolId, namePattern);
+      if (globalInfo == null) {
+        // fall back to local search
+        return search(id, namePattern);
+      } else {
+        return globalInfo;
+      }
     }
   }
 
