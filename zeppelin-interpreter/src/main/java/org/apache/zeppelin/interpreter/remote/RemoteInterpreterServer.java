@@ -595,6 +595,7 @@ public class RemoteInterpreterServer
     if (r != null) {
       synchronized (r) {
         r.object = object;
+        r.notified = true;
         r.notify();
       }
     }
@@ -632,6 +633,7 @@ public class RemoteInterpreterServer
 
       synchronized (r) {
         r.object = object;
+        r.notified = true;
         r.notify();
       }
     }
@@ -694,7 +696,7 @@ public class RemoteInterpreterServer
     sendEvent(event);
 
     synchronized (r) {
-      if (r.object == null) {
+      if (!r.notified) {
         try {
           r.wait(60 * 1000);
         } catch (InterruptedException e) {
@@ -703,6 +705,8 @@ public class RemoteInterpreterServer
     }
 
     if (r.object == null) {
+      // search timeout
+      logger.error("Search timeout");
       return null;
     } else {
       return gson.fromJson((String) r.object,
@@ -724,7 +728,7 @@ public class RemoteInterpreterServer
     sendEvent(event);
 
     synchronized (r) {
-      if (r.object == null) {
+      if (!r.notified) {
         try {
           r.wait(60 * 1000);
         } catch (InterruptedException e) {
@@ -739,10 +743,12 @@ public class RemoteInterpreterServer
     public final String location;
     public final String name;
     public Object object = null;
+    public boolean notified;
 
     public ResourceKey(String location, String name) {
       this.location = location;
       this.name = name;
+      notified = false;
     }
 
     public int hashCode() {

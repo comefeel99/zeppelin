@@ -127,7 +127,6 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
     assertEquals(1, infos.size());
 
     // get resource from intp B
-    info = infos.iterator().next();
     assertEquals("o1", gson.fromJson(intpB.interpret("get " + info.location() + " " + info.name(), createInterpreterContext()).message(), String.class));
 
     // remove resource
