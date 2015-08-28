@@ -31,6 +31,7 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter1;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter2;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class InterpreterFactoryTest {
 	  System.setProperty(ConfVars.ZEPPELIN_INTERPRETERS.getVarName(), "org.apache.zeppelin.interpreter.mock.MockInterpreter1,org.apache.zeppelin.interpreter.mock.MockInterpreter2");
 	  conf = new ZeppelinConfiguration();
 	  factory = new InterpreterFactory(conf, new InterpreterOption(false), null);
-	  context = new InterpreterContext("note", "id", "title", "text", null, null, null, null, new InterpreterOutput());
+	  context = new InterpreterContext("note", "id", "title", "text", null, null, null, null, new InterpreterOutput(), new ResourcePool(null));
 
 	}
 

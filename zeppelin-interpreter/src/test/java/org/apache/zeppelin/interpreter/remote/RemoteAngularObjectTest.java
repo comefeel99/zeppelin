@@ -35,6 +35,7 @@ import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.remote.mock.MockInterpreterAngular;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,7 +86,8 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
         new GUI(),
         new AngularObjectRegistry(intpGroup.getId(), null),
         new LinkedList<InterpreterContextRunner>(),
-        new InterpreterOutput());
+        new InterpreterOutput(),
+        new ResourcePool(null));
 
     intp.open();
   }

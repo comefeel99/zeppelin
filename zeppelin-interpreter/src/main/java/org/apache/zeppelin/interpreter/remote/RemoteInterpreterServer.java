@@ -18,9 +18,18 @@
 package org.apache.zeppelin.interpreter.remote;
 
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,6 +60,10 @@ import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEventType;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService;
+import org.apache.zeppelin.resource.ByteBufferInputStream;
+import org.apache.zeppelin.resource.ResourceInfo;
+import org.apache.zeppelin.resource.ResourcePool;
+import org.apache.zeppelin.resource.ResourcePoolEventHandler;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
@@ -67,11 +80,13 @@ import com.google.gson.reflect.TypeToken;
  */
 public class RemoteInterpreterServer
   extends Thread
-  implements RemoteInterpreterService.Iface, AngularObjectRegistryListener {
+  implements RemoteInterpreterService.Iface, AngularObjectRegistryListener,
+    ResourcePoolEventHandler {
   Logger logger = LoggerFactory.getLogger(RemoteInterpreterServer.class);
 
   InterpreterGroup interpreterGroup;
   AngularObjectRegistry angularObjectRegistry;
+  ResourcePool resourcePool;
   Gson gson = new Gson();
 
   RemoteInterpreterService.Processor<RemoteInterpreterServer> processor;
@@ -85,6 +100,7 @@ public class RemoteInterpreterServer
     this.port = port;
     interpreterGroup = new InterpreterGroup();
     angularObjectRegistry = new AngularObjectRegistry(interpreterGroup.getId(), this);
+    resourcePool = new ResourcePool(this);
     interpreterGroup.setAngularObjectRegistry(angularObjectRegistry);
 
     processor = new RemoteInterpreterService.Processor<RemoteInterpreterServer>(this);
@@ -352,7 +368,8 @@ public class RemoteInterpreterServer
         gson.fromJson(ric.getGui(), GUI.class),
         interpreterGroup.getAngularObjectRegistry(),
         contextRunners,
-        createInterpreterOutput());
+        createInterpreterOutput(),
+        resourcePool);
   }
 
   protected InterpreterOutput createInterpreterOutput() {
@@ -433,7 +450,7 @@ public class RemoteInterpreterServer
         RemoteInterpreterEventType.ANGULAR_OBJECT_REMOVE, gson.toJson(removeObject)));
   }
 
-  private void sendEvent(RemoteInterpreterEvent event) {
+  public void sendEvent(RemoteInterpreterEvent event) {
     synchronized (eventQueue) {
       eventQueue.add(event);
       eventQueue.notifyAll();
@@ -551,4 +568,197 @@ public class RemoteInterpreterServer
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
     registry.remove(name, noteId, false);
   }
+
+
+  // Resource pool -----
+
+  List<ResourceKey> resourcePoolsearchEventQueue = new LinkedList<ResourceKey>();
+  List<ResourceKey> resourcePoolgetEventQueue = new LinkedList<ResourceKey>();
+
+  @Override
+  public void resourcePoolInfo(String location, String namePattern, String object)
+      throws TException {
+    ResourceKey r = null;
+
+    synchronized (resourcePoolsearchEventQueue) {
+      ResourceKey key = new ResourceKey(location, namePattern);
+      int i = resourcePoolsearchEventQueue.indexOf(key);
+      if (i < 0) {
+        // not found. ignore event
+        logger.warn("Got search result for location={}, name={}, but no handler found",
+            location, namePattern);
+      } else {
+        r = resourcePoolsearchEventQueue.remove(i);
+      }
+    }
+
+    if (r != null) {
+      synchronized (r) {
+        r.object = object;
+        r.notify();
+      }
+    }
+  }
+
+  @Override
+  public void resourcePoolObject(String location, String name, ByteBuffer byteBuffer)
+      throws TException {
+    ResourceKey r = null;
+
+    synchronized (resourcePoolgetEventQueue) {
+      ResourceKey key = new ResourceKey(location, name);
+      int i = resourcePoolgetEventQueue.indexOf(key);
+      if (i < 0) {
+        // not found. ignore event
+        logger.warn("Got resource from pool location={}, name={}, but no handler found",
+            location, name);
+      } else {
+        r = resourcePoolgetEventQueue.remove(i);
+      }
+    }
+
+    if (r != null) {
+      InputStream ins = ByteBufferInputStream.get(byteBuffer);
+      ObjectInputStream oin;
+      Object object = null;
+      try {
+        oin = new ObjectInputStream(ins);
+        object = oin.readObject();
+        oin.close();
+        ins.close();
+      } catch (ClassNotFoundException | IOException e) {
+        logger.error("error", e);
+      }
+
+      synchronized (r) {
+        r.object = object;
+        r.notify();
+      }
+    }
+  }
+
+
+  /**
+   * ZeppelinServer searches local pool
+   */
+  @Override
+  public String resourcePoolSearch(String namePattern) throws TException {
+    Collection<ResourceInfo> infos = resourcePool.search(resourcePool.getId(), namePattern);
+    if (infos == null) {
+      return null;
+    } else {
+      return gson.toJson(infos);
+    }
+  }
+
+  /**
+   * ZeppelinServer Get object from local pool
+   */
+  @Override
+  public ByteBuffer resourcePoolGet(String name) throws TException {
+    Object o = resourcePool.get(resourcePool.getId(), name);
+    if (o == null) {
+      return null;
+    } else {
+      if (!(o instanceof Serializable)) {
+        return null;
+      }
+
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      ObjectOutputStream oos;
+      try {
+        oos = new ObjectOutputStream(out);
+        oos.writeObject(o);
+        oos.close();
+        out.close();
+      } catch (IOException e) {
+        logger.error("error", e);
+        return null;
+      }
+
+      return ByteBuffer.wrap(out.toByteArray());
+    }
+  }
+
+  @Override
+  public Collection<ResourceInfo> resourcePoolSearch(String location, String namePattern) {
+    ResourceKey r = new ResourceKey(location, namePattern);
+    RemoteInterpreterEvent event = new RemoteInterpreterEvent(
+        RemoteInterpreterEventType.RESOURCE_POOL_SEARCH,
+        gson.toJson(r));
+
+    synchronized (resourcePoolsearchEventQueue) {
+      resourcePoolsearchEventQueue.add(r);
+    }
+
+    sendEvent(event);
+
+    synchronized (r) {
+      if (r.object == null) {
+        try {
+          r.wait(60 * 1000);
+        } catch (InterruptedException e) {
+        }
+      }
+    }
+
+    if (r.object == null) {
+      return null;
+    } else {
+      return gson.fromJson((String) r.object,
+          new TypeToken<Collection<ResourceInfo>>() {}.getType());
+    }
+  }
+
+  @Override
+  public Object resourcePoolGetObject(String location, String name) {
+    ResourceKey r = new ResourceKey(location, name);
+    RemoteInterpreterEvent event = new RemoteInterpreterEvent(
+        RemoteInterpreterEventType.RESOURCE_POOL_GET,
+        gson.toJson(r));
+
+    synchronized (resourcePoolgetEventQueue) {
+      resourcePoolgetEventQueue.add(r);
+    }
+
+    sendEvent(event);
+
+    synchronized (r) {
+      if (r.object == null) {
+        try {
+          r.wait(60 * 1000);
+        } catch (InterruptedException e) {
+        }
+      }
+    }
+
+    return r.object;
+  }
+
+  static class ResourceKey {
+    public final String location;
+    public final String name;
+    public Object object = null;
+
+    public ResourceKey(String location, String name) {
+      this.location = location;
+      this.name = name;
+    }
+
+    public int hashCode() {
+      return ("location:" + location + " name:" + name).hashCode();
+    }
+
+    public boolean equals(Object o) {
+      if (o instanceof ResourceKey) {
+        ResourceKey r = (ResourceKey) o;
+        return r.location.equals(location) && r.name.equals(name);
+      } else {
+        return false;
+      }
+    }
+  }
+
+
+
 }

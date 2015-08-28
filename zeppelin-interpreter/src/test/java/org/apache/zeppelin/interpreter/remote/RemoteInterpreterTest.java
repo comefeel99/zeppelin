@@ -42,6 +42,7 @@ import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.InterpretJob;
 import org.apache.zeppelin.interpreter.remote.mock.MockInterpreterA;
 import org.apache.zeppelin.interpreter.remote.mock.MockInterpreterB;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.Scheduler;
@@ -78,7 +79,8 @@ public class RemoteInterpreterTest {
         new GUI(),
         new AngularObjectRegistry(intpGroup.getId(), null),
         new LinkedList<InterpreterContextRunner>(),
-        new InterpreterOutput());
+        new InterpreterOutput(),
+        new ResourcePool(null));
   }
 
 

@@ -24,6 +24,7 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.apache.zeppelin.display.AngularObjectRegistry;
+import org.apache.zeppelin.resource.ResourcePool;
 
 /**
  * InterpreterGroup is list of interpreters in the same group.

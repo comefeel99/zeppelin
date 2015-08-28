@@ -22,6 +22,7 @@ import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.Interpreter.FormType;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.slf4j.Logger;
@@ -255,7 +256,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
             this.settings,
             registry,
             runners,
-            new InterpreterOutput());
+            new InterpreterOutput(),
+            null);   // Resource pool is not implemented in local interpreter mode;
     return interpreterContext;
   }
 

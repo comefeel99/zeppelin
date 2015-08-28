@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class IgniteInterpreterTest {
   private static final String HOST = "127.0.0.1:47500..47509";
 
   private static final InterpreterContext INTP_CONTEXT =
-          new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput());
+          new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null));
 
   private IgniteInterpreter intp;
   private Ignite ignite;

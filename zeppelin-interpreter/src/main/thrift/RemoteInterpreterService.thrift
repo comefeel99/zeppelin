@@ -42,7 +42,9 @@ enum RemoteInterpreterEventType {
   ANGULAR_OBJECT_ADD = 2,
   ANGULAR_OBJECT_UPDATE = 3,
   ANGULAR_OBJECT_REMOVE = 4,
-  RUN_INTERPRETER_CONTEXT_RUNNER = 5
+  RUN_INTERPRETER_CONTEXT_RUNNER = 5,
+  RESOURCE_POOL_SEARCH = 6,
+  RESOURCE_POOL_GET = 7
 }
 
 struct RemoteInterpreterEvent {
@@ -68,4 +70,12 @@ service RemoteInterpreterService {
   void angularObjectUpdate(1: string name, 2: string noteId, 3: string object);
   void angularObjectAdd(1: string name, 2: string noteId, 3: string object);
   void angularObjectRemove(1: string name, 2: string noteId);
+
+  # zeppelin server pushes data
+  void resourcePoolInfo(1: string location, 2: string namePattern, 3: string object);
+  void resourcePoolObject(1: string location, 2: string name, 3: binary object);
+  # zeppelin server poll data
+  string resourcePoolSearch(1: string namePattern);
+  binary resourcePoolGet(1: string name);
+
 }

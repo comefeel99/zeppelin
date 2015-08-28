@@ -34,6 +34,7 @@ import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.resource.ResourcePool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -79,7 +80,7 @@ public class SparkInterpreterTest {
     context = new InterpreterContext("note", "id", "title", "text",
         new HashMap<String, Object>(), new GUI(), new AngularObjectRegistry(
             intpGroup.getId(), null),
-        new LinkedList<InterpreterContextRunner>(), new InterpreterOutput());
+        new LinkedList<InterpreterContextRunner>(), new InterpreterOutput(), new ResourcePool(null));
   }
 
   @After

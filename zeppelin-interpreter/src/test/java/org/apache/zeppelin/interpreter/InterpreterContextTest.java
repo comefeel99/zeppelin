@@ -18,11 +18,12 @@ package org.apache.zeppelin.interpreter;
 
 import static org.junit.Assert.*;
 
+import org.apache.zeppelin.resource.ResourcePool;
 import org.junit.Test;
 
 public class InterpreterContextTest {
   private InterpreterContext createInterpreterContext() {
-    return new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput());
+    return new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null));
   }
 
 
