@@ -32,6 +32,7 @@ import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.InterpreterResult.Type;
+import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
@@ -312,13 +313,18 @@ public class RemoteInterpreter extends Interpreter {
     // job submit sequence when Two or more interpreter shares single Scheduler.
     InterpreterGroup intpGroup = getInterpreterGroup();
     Interpreter firstInterpreter = intpGroup.get(0);
-    if (firstInterpreter.equals(this)) {
+    Interpreter innerInterpreter = firstInterpreter;
+    while (innerInterpreter instanceof WrappedInterpreter) {
+      innerInterpreter = ((WrappedInterpreter) innerInterpreter).getInnerInterpreter();
+    }
+
+    if (innerInterpreter.equals(this)) {
       return SchedulerFactory.singleton().createOrGetRemoteScheduler(
           "remoteinterpreter_" + interpreterProcess.hashCode(),
           getInterpreterConnectionFactory(),
           maxConcurrency);
     } else {
-      return firstInterpreter.getScheduler();
+      return innerInterpreter.getScheduler();
     }
   }
 

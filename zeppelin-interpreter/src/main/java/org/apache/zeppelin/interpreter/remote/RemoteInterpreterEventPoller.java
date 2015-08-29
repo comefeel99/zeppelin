@@ -100,7 +100,6 @@ public class RemoteInterpreterEventPoller extends Thread {
       Gson gson = new Gson();
 
       AngularObjectRegistry angularObjectRegistry = interpreterGroup.getAngularObjectRegistry();
-
       try {
         if (event.getType() == RemoteInterpreterEventType.NO_OP) {
           continue;

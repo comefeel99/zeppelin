@@ -65,7 +65,7 @@ public class RemoteInterpreterTest {
 
   @After
   public void tearDown() throws Exception {
-    intpGroup.clone();
+    intpGroup.close();
     intpGroup.destroy();
   }
 
@@ -307,7 +307,6 @@ public class RemoteInterpreterTest {
 
     intpA.close();
     intpB.close();
-
     InterpreterConnectionFactory process = intpA.getInterpreterConnectionFactory();
     assertFalse(process.isRunning());
   }

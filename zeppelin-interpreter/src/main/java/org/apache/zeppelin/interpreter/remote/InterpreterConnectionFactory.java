@@ -94,16 +94,18 @@ public class InterpreterConnectionFactory implements ExecuteResultHandler {
       if (r == 0) {
         logger.info("shutdown interpreter process");
         remoteInterpreterEventPoller.shutdown();
-
         // first try shutdown
+        Client client = null;
         try {
-          Client client = getClient();
+          client = getClient();
           client.shutdown();
-          releaseClient(client);
         } catch (Exception e) {
-          logger.error("Error", e);
+          // we safely ignore exception while client.shutdown() may terminate remote process
+        } finally {
+          if (client != null) {
+            releaseClient(client);
+          }
         }
-
         clientPool.clear();
         clientPool.close();
 
