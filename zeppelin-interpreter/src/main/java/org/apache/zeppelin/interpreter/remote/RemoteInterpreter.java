@@ -306,11 +306,20 @@ public class RemoteInterpreter extends Interpreter {
   @Override
   public Scheduler getScheduler() {
     int maxConcurrency = 10;
-    InterpreterConnectionFactory connectionFactory = getInterpreterConnectionFactory();
-    return SchedulerFactory.singleton().createOrGetRemoteScheduler(
-        "remoteinterpreter_" + interpreterProcess.hashCode(),
-        getInterpreterConnectionFactory(),
-        maxConcurrency);
+    // Share a single RemoteScheduler instance among all RemoteInterpreter in
+    // the same InterpreterGroup.
+    // If each RemoteInterpreter use each RemoteScheduler instance, can not guarantee
+    // job submit sequence when Two or more interpreter shares single Scheduler.
+    InterpreterGroup intpGroup = getInterpreterGroup();
+    Interpreter firstInterpreter = intpGroup.get(0);
+    if (firstInterpreter.equals(this)) {
+      return SchedulerFactory.singleton().createOrGetRemoteScheduler(
+          "remoteinterpreter_" + interpreterProcess.hashCode(),
+          getInterpreterConnectionFactory(),
+          maxConcurrency);
+    } else {
+      return firstInterpreter.getScheduler();
+    }
   }
 
 
