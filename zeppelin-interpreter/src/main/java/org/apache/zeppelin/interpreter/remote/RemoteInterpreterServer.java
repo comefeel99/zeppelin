@@ -317,9 +317,9 @@ public class RemoteInterpreterServer
 
       if (result.message() != null) {
         if (message == null) {
-          message = result.message();
+          message = result.toString();
         } else {
-          message += result.message();
+          message += result.toString();
         }
       }
 

@@ -217,7 +217,7 @@ public class Paragraph extends Job implements Serializable, Cloneable {
       message = new String(interpreterOutput);
 
       if (ret.message() != null) {
-        message += ret.message();
+        message += ret.toString();
       }
 
       return new InterpreterResult(ret.code(), message);

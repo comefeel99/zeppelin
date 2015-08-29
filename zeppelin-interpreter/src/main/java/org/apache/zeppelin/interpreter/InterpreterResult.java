@@ -99,7 +99,7 @@ public class InterpreterResult implements Serializable {
       int magicLength = lastType.getValue().name().length() + 1;
       // 1 for the last \n or space after magic
       int subStringPos = magicLength + lastType.getKey() + 1;
-      return msg.substring(subStringPos); 
+      return msg.substring(subStringPos);
     }
   }
 
@@ -116,7 +116,7 @@ public class InterpreterResult implements Serializable {
       return lastType.getValue();
     }
   }
-  
+
   private int getIndexOfType(String msg, Type t) {
     if (msg == null) {
       return 0;
@@ -124,7 +124,7 @@ public class InterpreterResult implements Serializable {
     String typeString = "%" + t.name().toLowerCase();
     return StringUtils.indexOf(msg, typeString );
   }
-  
+
   private TreeMap<Integer, Type> buildIndexMap(String msg) {
     int lastIndexOftypes = 0;
     TreeMap<Integer, Type> typesLastIndexInMsg = new TreeMap<Integer, Type>();
@@ -153,5 +153,9 @@ public class InterpreterResult implements Serializable {
   public InterpreterResult type(Type type) {
     this.type = type;
     return this;
+  }
+
+  public String toString() {
+    return "%" + type.name().toLowerCase() + " " + msg;
   }
 }
