@@ -70,9 +70,12 @@ public class RemoteInterpreterTest {
   }
 
   private InterpreterContext createInterpreterContext() {
+    return createInterpreterContext("id");
+  }
+  private InterpreterContext createInterpreterContext(String paragraphId) {
     return new InterpreterContext(
         "note",
-        "id",
+        paragraphId,
         "title",
         "text",
         new HashMap<String, Object>(),
@@ -255,7 +258,7 @@ public class RemoteInterpreterTest {
 
       @Override
       protected Object jobRun() throws Throwable {
-        return intpA.interpret("500", createInterpreterContext());
+        return intpA.interpret("500", createInterpreterContext("jobA"));
       }
 
       @Override
@@ -280,7 +283,7 @@ public class RemoteInterpreterTest {
 
       @Override
       protected Object jobRun() throws Throwable {
-        return intpB.interpret("500", createInterpreterContext());
+        return intpB.interpret("500", createInterpreterContext("jobB"));
       }
 
       @Override
@@ -423,8 +426,7 @@ public class RemoteInterpreterTest {
         @Override
         protected Object jobRun() throws Throwable {
           String stmt = Integer.toString(timeToSleep);
-          InterpreterResult ret = intpA.interpret(stmt, createInterpreterContext());
-
+          InterpreterResult ret = intpA.interpret(stmt, createInterpreterContext(jobId));
           synchronized (results) {
             results.add(ret.message());
             results.notify();
