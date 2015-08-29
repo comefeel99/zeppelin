@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 /**
@@ -47,7 +48,7 @@ public class ResourcePool {
   }
 
   private String generatePoolId() {
-    return "resourcePool_" + hashCode();
+    return "resourcePool_" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
   }
 
   public void put(String name, Object o) {
