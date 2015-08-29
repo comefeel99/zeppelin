@@ -211,7 +211,7 @@ public class RemoteInterpreterServer
     InterpretJobListener jobListener = new InterpretJobListener();
     InterpretJob job = new InterpretJob(
         interpreterContext.getParagraphId(),
-        "remoteInterpretJob_" + System.currentTimeMillis(),
+        interpreterContext.getParagraphId(),
         jobListener,
         JobProgressPoller.DEFAULT_INTERVAL_MSEC,
         intp,

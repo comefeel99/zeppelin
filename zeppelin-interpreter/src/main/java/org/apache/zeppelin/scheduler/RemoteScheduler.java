@@ -78,13 +78,13 @@ public class RemoteScheduler implements Scheduler {
       Scheduler scheduler = this;
       JobRunner jobRunner = new JobRunner(scheduler, job);
       executor.execute(jobRunner);
-
       // wait until it is submitted to the remote
-      while (!jobRunner.isJobSubmittedInRemote()) {
-        synchronized (queue) {
+      synchronized (jobRunner) {
+        while (!jobRunner.isJobSubmittedInRemote()) {
           try {
-            queue.wait(500);
+            jobRunner.wait(500);
           } catch (InterruptedException e) {
+            // nothing to do
           }
         }
       }
@@ -289,7 +289,7 @@ public class RemoteScheduler implements Scheduler {
           running.remove(job);
           queue.notify();
         }
-        jobSubmittedRemotely = true;
+        jobSubmittedRemotely();
 
         return;
       }
@@ -304,7 +304,7 @@ public class RemoteScheduler implements Scheduler {
       job.run();
 
       jobExecuted = true;
-      jobSubmittedRemotely = true;
+      jobSubmittedRemotely();
 
       jobStatusPoller.shutdown();
       try {
@@ -344,11 +344,18 @@ public class RemoteScheduler implements Scheduler {
     public void beforeStatusChange(Job job, Status before, Status after) {
     }
 
+    private void jobSubmittedRemotely() {
+      synchronized (this) {
+        jobSubmittedRemotely = true;
+        this.notify();
+      }
+    }
+
     @Override
     public void afterStatusChange(Job job, Status before, Status after) {
       if (after == null) { // unknown. maybe before sumitted remotely, maybe already finished.
         if (jobExecuted) {
-          jobSubmittedRemotely = true;
+          jobSubmittedRemotely();
           Object jobResult = job.getReturn();
           if (job.isAborted()) {
             job.setStatus(Status.ABORT);
@@ -372,11 +379,11 @@ public class RemoteScheduler implements Scheduler {
           // it can be status of last run.
           // so not updating the remoteStatus
           return;
-        } else if (after == Status.RUNNING) {
-          jobSubmittedRemotely = true;
+        } else if (after == Status.RUNNING || after == Status.PENDING) {
+          jobSubmittedRemotely();
         }
       } else {
-        jobSubmittedRemotely = true;
+        jobSubmittedRemotely();
       }
 
       // status polled by status poller

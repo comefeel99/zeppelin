@@ -81,6 +81,7 @@ public class FIFOScheduler implements Scheduler {
       queue.add(job);
       queue.notify();
     }
+
   }
 
   @Override

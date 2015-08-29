@@ -244,7 +244,7 @@ public class RemoteInterpreterTest {
     intpB.open();
 
     long start = System.currentTimeMillis();
-    Job jobA = new Job("jobA", null) {
+    Job jobA = new Job("jobA", "jobA", null, 300) {
 
       @Override
       public int progress() {
@@ -269,7 +269,7 @@ public class RemoteInterpreterTest {
     };
     intpA.getScheduler().submit(jobA);
 
-    Job jobB = new Job("jobB", null) {
+    Job jobB = new Job("jobB", "jobA", null, 300) {
 
       @Override
       public int progress() {
@@ -350,7 +350,7 @@ public class RemoteInterpreterTest {
 
         @Override
         protected Object jobRun() throws Throwable {
-          InterpreterResult ret = intpA.interpret(getJobName(), createInterpreterContext());
+          InterpreterResult ret = intpA.interpret(getJobName(), createInterpreterContext(jobId));
 
           synchronized (results) {
             results.add(ret.message());
