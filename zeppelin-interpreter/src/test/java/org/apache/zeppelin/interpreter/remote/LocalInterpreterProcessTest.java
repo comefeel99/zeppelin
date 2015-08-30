@@ -7,12 +7,13 @@ import java.util.HashMap;
 import org.junit.Test;
 
 public class LocalInterpreterProcessTest {
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   @Test
   public void testStartStop() {
     LocalInterpreterProcess process = new LocalInterpreterProcess(
         "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(),
-        10 * 1000);
+        10 * 1000, localRepo);
 
     assertFalse(process.isRunning());
     process.start();

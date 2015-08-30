@@ -51,6 +51,8 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
   private AtomicInteger onUpdate;
   private AtomicInteger onRemove;
 
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
+
   @Before
   public void setUp() throws Exception {
     onAdd = new AtomicInteger(0);
@@ -71,7 +73,8 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intp);

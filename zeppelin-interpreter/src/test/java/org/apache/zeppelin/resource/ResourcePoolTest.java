@@ -43,6 +43,7 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
   private InterpreterGroup intpGroup1;
   private InterpreterGroup intpGroup2;
   private HashMap<String, String> env;
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   @Before
   public void setUp() throws Exception {
@@ -86,7 +87,8 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup1.add(intpA);
@@ -98,7 +100,8 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup2.add(intpB);

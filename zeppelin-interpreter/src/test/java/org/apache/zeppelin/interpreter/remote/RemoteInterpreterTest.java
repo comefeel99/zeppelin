@@ -51,7 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteInterpreterTest {
-
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   private InterpreterGroup intpGroup;
   private HashMap<String, String> env;
@@ -97,7 +97,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -109,7 +110,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpB);
@@ -152,7 +154,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -174,7 +177,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -186,7 +190,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpB);
@@ -222,7 +227,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -234,7 +240,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpB);
@@ -321,7 +328,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -394,7 +402,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);
@@ -465,7 +474,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpA.setInterpreterGroup(intpGroup);
@@ -487,7 +497,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpA.setInterpreterGroup(intpGroup);
@@ -512,7 +523,8 @@ public class RemoteInterpreterTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpA.setInterpreterGroup(intpGroup);

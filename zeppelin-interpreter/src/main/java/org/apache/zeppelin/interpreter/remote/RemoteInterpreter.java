@@ -64,22 +64,25 @@ public class RemoteInterpreter extends Interpreter {
       String className,
       String interpreterRunner,
       String interpreterPath,
-      int connectTimeout) {
+      int connectTimeout,
+      String localRepo) {
     this(property, className, interpreterRunner, interpreterPath,
-        new HashMap<String, String>(), connectTimeout);
+        new HashMap<String, String>(), connectTimeout, localRepo);
   }
   public RemoteInterpreter(Properties property,
       String className,
       String interpreterRunner,
       String interpreterPath,
       Map<String, String> env,
-      int connectTimeout) {
+      int connectTimeout,
+      String localRepo) {
     super(property);
     this.interpreterProcess = new LocalInterpreterProcess(
         interpreterRunner,
         interpreterPath,
         env,
-        connectTimeout);
+        connectTimeout,
+        localRepo);
     this.className = className;
   }
   public RemoteInterpreter(Properties property,

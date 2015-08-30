@@ -78,4 +78,8 @@ service RemoteInterpreterService {
   string resourcePoolSearch(1: string namePattern);
   binary resourcePoolGet(1: string name);
 
+
+  # helium
+  i32 runApplication(1: string artifact, 2: string classname, 3: RemoteInterpreterContext interpreterContext);
+  void signalApplication(1: string artifact, 2: string classname, 3: RemoteInterpreterContext interpreterContext);
 }

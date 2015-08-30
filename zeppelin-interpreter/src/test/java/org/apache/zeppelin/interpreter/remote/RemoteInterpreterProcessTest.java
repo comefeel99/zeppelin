@@ -24,6 +24,7 @@ import java.util.HashMap;
 import org.junit.Test;
 
 public class RemoteInterpreterProcessTest {
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   @Test
   public void testIsRunning() throws IOException {
@@ -35,7 +36,7 @@ public class RemoteInterpreterProcessTest {
     // start external process
     LocalInterpreterProcess process = new LocalInterpreterProcess(
         "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(),
-        10 * 1000);
+        10 * 1000, localRepo);
     process.start();
 
     // configure use external process

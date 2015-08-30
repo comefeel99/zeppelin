@@ -34,13 +34,14 @@ import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
 import org.junit.Test;
 
 public class InterpreterConnectionFactoryTest {
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   @Test
   public void testStartStop() {
     InterpreterGroup intpGroup = new InterpreterGroup();
     InterpreterConnectionFactory rip = new InterpreterConnectionFactory(new LocalInterpreterProcess(
         "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(),
-        10 * 1000), mock(MockRemoteInterpreterEventPoller.class));
+        10 * 1000, localRepo), mock(MockRemoteInterpreterEventPoller.class));
     assertFalse(rip.isRunning());
     assertEquals(0, rip.referenceCount());
     assertEquals(1, rip.reference(intpGroup));
@@ -56,7 +57,7 @@ public class InterpreterConnectionFactoryTest {
   public void testClientFactory() throws Exception {
     InterpreterGroup intpGroup = new InterpreterGroup();
     InterpreterConnectionFactory rip = new InterpreterConnectionFactory(new LocalInterpreterProcess(
-        "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(), 10 * 1000),
+        "../bin/interpreter.sh", "nonexists", new HashMap<String, String>(), 10 * 1000, localRepo),
         new MockRemoteInterpreterEventPoller());
     rip.reference(intpGroup);
     assertEquals(0, rip.getNumActiveClient());

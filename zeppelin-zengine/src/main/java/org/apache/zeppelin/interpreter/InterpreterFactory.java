@@ -639,7 +639,8 @@ public class InterpreterFactory {
     int connectTimeout = conf.getInt(ConfVars.ZEPPELIN_INTERPRETER_CONNECT_TIMEOUT);
     LazyOpenInterpreter intp = new LazyOpenInterpreter(new RemoteInterpreter(
         property, className, conf.getInterpreterRemoteRunnerPath(),
-        interpreterPath, connectTimeout));
+        interpreterPath, connectTimeout,
+        conf.getLocalRepoDir()));
     return intp;
   }
 

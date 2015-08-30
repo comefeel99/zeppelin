@@ -25,12 +25,10 @@ import java.util.Collection;
 public class Helium {
   HeliumConf conf;
   private LocalSpecProvider localSpecProvider;
-  private ApplicationLoader appLoader;
 
   public Helium(HeliumConf conf, String localSpecDir, ApplicationLoader appLoader) {
     this.conf = conf;
     localSpecProvider = new LocalSpecProvider(localSpecDir);
-    this.appLoader = appLoader;
   }
 
   public Collection<ApplicationSpec> getAllSpecs() {

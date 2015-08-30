@@ -41,6 +41,7 @@ import org.junit.Test;
 public class RemoteSchedulerTest {
 
   private SchedulerFactory schedulerSvc;
+  String localRepo = System.getProperty("java.io.tmpdir") + "/localrepo";
 
   @Before
   public void setUp() throws Exception{
@@ -65,7 +66,8 @@ public class RemoteSchedulerTest {
         new File("../bin/interpreter.sh").getAbsolutePath(),
         "fake",
         env,
-        10 * 1000
+        10 * 1000,
+        localRepo
         );
 
     intpGroup.add(intpA);

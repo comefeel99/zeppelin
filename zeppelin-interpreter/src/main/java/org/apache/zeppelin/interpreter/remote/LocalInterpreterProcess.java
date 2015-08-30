@@ -46,17 +46,20 @@ public class LocalInterpreterProcess implements
   private DefaultExecutor executor;
   private ExecuteWatchdog watchdog;
   private boolean running;
+  private String localRepo;
 
 
   public LocalInterpreterProcess (
       String interpreterRunner,
       String interpreterPath,
       Map<String, String> env,
-      int connectTimeout) {
+      int connectTimeout,
+      String localRepo) {
     this.interpreterRunner = interpreterRunner;
     this.interpreterPath = interpreterPath;
     this.connectTimeout = connectTimeout;
     this.env = env;
+    this.localRepo = localRepo;
   }
 
   @Override
@@ -73,6 +76,8 @@ public class LocalInterpreterProcess implements
     cmdLine.addArgument(interpreterPath, false);
     cmdLine.addArgument("-p", false);
     cmdLine.addArgument(Integer.toString(port), false);
+    cmdLine.addArgument("-l", false);
+    cmdLine.addArgument(localRepo, false);
 
     executor = new DefaultExecutor();
 

@@ -322,11 +322,11 @@ public class ZeppelinConfiguration extends XMLConfiguration {
   public String getNotebookDir() {
     return getString(ConfVars.ZEPPELIN_NOTEBOOK_DIR);
   }
-  
+
   public String getUser() {
     return getString(ConfVars.ZEPPELIN_NOTEBOOK_S3_USER);
   }
-  
+
   public String getBucketName() {
     return getString(ConfVars.ZEPPELIN_NOTEBOOK_S3_BUCKET);
   }
@@ -337,6 +337,14 @@ public class ZeppelinConfiguration extends XMLConfiguration {
 
   public String getInterpreterSettingPath() {
     return getRelativeDir(String.format("%s/interpreter.json", getConfDir()));
+  }
+
+  public String getHeliumConfPath() {
+    return getRelativeDir(String.format("%s/helium.json", getConfDir()));
+  }
+
+  public String getLocalRepoDir() {
+    return getRelativeDir(ConfVars.ZEPPELIN_DEP_LOCALREPO);
   }
 
   public String getInterpreterRemoteRunnerPath() {
@@ -411,7 +419,9 @@ public class ZeppelinConfiguration extends XMLConfiguration {
     ZEPPELIN_INTERPRETER_REMOTE_RUNNER("zeppelin.interpreter.remoterunner", "bin/interpreter.sh"),
     // Decide when new note is created, interpreter settings will be binded automatically or not.
     ZEPPELIN_NOTEBOOK_AUTO_INTERPRETER_BINDING("zeppelin.notebook.autoInterpreterBinding", true),
-    ZEPPELIN_CONF_DIR("zeppelin.conf.dir", "conf");
+    ZEPPELIN_CONF_DIR("zeppelin.conf.dir", "conf"),
+    // local repository for dependency downloading
+    ZEPPELIN_DEP_LOCALREPO("zeppelin.dep.localrepo", "local-repo");
 
     private String varName;
     @SuppressWarnings("rawtypes")

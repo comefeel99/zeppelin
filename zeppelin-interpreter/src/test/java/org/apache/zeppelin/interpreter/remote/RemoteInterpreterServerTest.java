@@ -40,7 +40,7 @@ public class RemoteInterpreterServerTest {
   @Test
   public void testStartStop() throws InterruptedException, IOException, TException {
     RemoteInterpreterServer server = new RemoteInterpreterServer(
-        RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces());
+        RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces(), System.getProperty("java.io.tmpdir"));
     assertEquals(false, server.isRunning());
 
     server.start();

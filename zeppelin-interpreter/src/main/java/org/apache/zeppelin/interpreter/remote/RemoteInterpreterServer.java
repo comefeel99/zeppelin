@@ -40,10 +40,13 @@ import org.apache.thrift.TException;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
+import org.apache.zeppelin.helium.ApplicationLoader;
+import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.Interpreter.FormType;
@@ -94,20 +97,36 @@ public class RemoteInterpreterServer
   private int port;
   private TThreadPoolServer server;
 
+  ApplicationLoader appLoader;
+
   List<RemoteInterpreterEvent> eventQueue = new LinkedList<RemoteInterpreterEvent>();
 
-  public RemoteInterpreterServer(int port) throws TTransportException {
+  public RemoteInterpreterServer(int port, String localRepo) throws TTransportException {
     this.port = port;
     interpreterGroup = new InterpreterGroup();
     angularObjectRegistry = new AngularObjectRegistry(interpreterGroup.getId(), this);
     resourcePool = new ResourcePool(this);
     interpreterGroup.setAngularObjectRegistry(angularObjectRegistry);
 
+
+    appLoader = createAppLoader(localRepo);
+
     processor = new RemoteInterpreterService.Processor<RemoteInterpreterServer>(this);
     TServerSocket serverTransport = new TServerSocket(port);
     server = new TThreadPoolServer(
         new TThreadPoolServer.Args(serverTransport).processor(processor));
 
+  }
+
+
+  private ApplicationLoader createAppLoader(String localRepo) {
+    // create app loader
+    ClassLoader cl = getClass().getClassLoader();
+    if (cl == null) {
+      cl = ClassLoader.getSystemClassLoader();
+    }
+
+    return new ApplicationLoader(cl, new DependencyResolver(localRepo));
   }
 
   @Override
@@ -155,7 +174,8 @@ public class RemoteInterpreterServer
   public static void main(String[] args)
       throws Exception {
     int port = Integer.parseInt(args[0]);
-    RemoteInterpreterServer remoteInterpreterServer = new RemoteInterpreterServer(port);
+    String localRepo = args[1];
+    RemoteInterpreterServer remoteInterpreterServer = new RemoteInterpreterServer(port, localRepo);
     remoteInterpreterServer.start();
     remoteInterpreterServer.join();
     System.exit(0);

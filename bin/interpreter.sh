@@ -21,10 +21,10 @@ bin=$(cd "${bin}">/dev/null; pwd)
 
 
 function usage() {
-    echo "usage) $0 -p <port> -d <directory to load>"
+    echo "usage) $0 -p <port> -d <directory to load> -l <local repo dir>"
 }
 
-while getopts "hp:d:" o; do
+while getopts "hp:d:l:" o; do
     case ${o} in
         h)
             usage
@@ -36,6 +36,8 @@ while getopts "hp:d:" o; do
         p)
             PORT=${OPTARG}
             ;;
+        l)
+            LOCAL_REPO=${OPTARG}
         esac
 done
 
@@ -141,7 +143,7 @@ fi
 export SPARK_CLASSPATH+=":${ZEPPELIN_CLASSPATH}"
 CLASSPATH+=":${ZEPPELIN_CLASSPATH}"
 
-${ZEPPELIN_RUNNER} ${JAVA_INTP_OPTS} -cp ${CLASSPATH} ${ZEPPELIN_SERVER} ${PORT} &
+${ZEPPELIN_RUNNER} ${JAVA_INTP_OPTS} -cp ${CLASSPATH} ${ZEPPELIN_SERVER} ${PORT} "${LOCAL_REPO}" &
 pid=$!
 if [[ -z "${pid}" ]]; then
   return 1;

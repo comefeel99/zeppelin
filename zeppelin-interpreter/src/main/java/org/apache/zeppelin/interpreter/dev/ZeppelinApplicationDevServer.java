@@ -42,8 +42,8 @@ public abstract class ZeppelinApplicationDevServer extends
   DevInterpreter interpreter = null;
   InterpreterOutput out = null;
 
-  public ZeppelinApplicationDevServer(int port) throws TException {
-    super(port);
+  public ZeppelinApplicationDevServer(int port, String localRepo) throws TException {
+    super(port, localRepo);
   }
 
   @Override
