@@ -17,13 +17,16 @@
 
 package org.apache.zeppelin.interpreter;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.apache.zeppelin.display.AngularObjectRegistry;
+import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.resource.ResourcePool;
 
 /**
@@ -34,6 +37,13 @@ public class InterpreterGroup extends LinkedList<Interpreter>{
   String id;
 
   AngularObjectRegistry angularObjectRegistry;
+  transient String resourcePoolId;
+  transient ResourcePool resourcePool;         // for locally loaded interpreter. Not used for
+                                               // interpreter loaded in remote process
+  transient ApplicationLoader appLoader;       // for locally loaded interpreter.
+  public static final transient Map<String, InterpreterGroup> allInterpreterGroups =
+      new HashMap<String, InterpreterGroup>(); // all interpreter groups
+
 
   public InterpreterGroup(String id) {
     this.id = id;
@@ -41,6 +51,10 @@ public class InterpreterGroup extends LinkedList<Interpreter>{
 
   public InterpreterGroup() {
     getId();
+
+    synchronized (allInterpreterGroups) {
+      allInterpreterGroups.put(id, this);
+    }
   }
 
   private static String generateId() {
@@ -73,7 +87,35 @@ public class InterpreterGroup extends LinkedList<Interpreter>{
     this.angularObjectRegistry = angularObjectRegistry;
   }
 
+  public ResourcePool getResourcePool() {
+    return resourcePool;
+  }
+
+  public void setResourcePool(ResourcePool resourcePool) {
+    this.resourcePool = resourcePool;
+    setResourcePoolId(resourcePool.getId());
+  }
+
+  public ApplicationLoader getAppLoader() {
+    return appLoader;
+  }
+
+  public void setAppLoader(ApplicationLoader appLoader) {
+    this.appLoader = appLoader;
+  }
+
+  public String getResourcePoolId() {
+    return resourcePoolId;
+  }
+
+  public void setResourcePoolId(String resourcePoolId) {
+    this.resourcePoolId = resourcePoolId;
+  }
+
   public void close() {
+    synchronized (allInterpreterGroups) {
+      allInterpreterGroups.remove(id);
+    }
     List<Thread> closeThreads = new LinkedList<Thread>();
 
     for (final Interpreter intp : this) {

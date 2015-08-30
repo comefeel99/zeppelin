@@ -103,7 +103,8 @@ public class RemoteSchedulerTest {
             new AngularObjectRegistry(intpGroup.getId(), null),
             new LinkedList<InterpreterContextRunner>(),
             new InterpreterOutput(),
-            new ResourcePool(null)));
+            new ResourcePool(null),
+            null));
         return "1000";
       }
 

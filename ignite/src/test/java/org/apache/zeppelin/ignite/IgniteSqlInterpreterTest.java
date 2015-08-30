@@ -45,7 +45,7 @@ public class IgniteSqlInterpreterTest {
   private static final String HOST = "127.0.0.1:47500..47509";
 
   private static final InterpreterContext INTP_CONTEXT =
-          new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null));
+          new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null), null);
 
   private Ignite ignite;
   private IgniteSqlInterpreter intp;

@@ -354,7 +354,8 @@ public class RemoteInterpreter extends Interpreter {
     return interpreterGroup.getId();
   }
 
-  private RemoteInterpreterContext convert(InterpreterContext ic) {
+  public static RemoteInterpreterContext convert(InterpreterContext ic) {
+    Gson gson = new Gson();
     return new RemoteInterpreterContext(
         ic.getNoteId(),
         ic.getParagraphId(),

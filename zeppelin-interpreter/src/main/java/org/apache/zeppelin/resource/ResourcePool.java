@@ -16,13 +16,31 @@
  */
 package org.apache.zeppelin.resource;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
+
+import org.apache.thrift.TException;
+import org.apache.zeppelin.interpreter.Interpreter;
+import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
+import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Resource pool stores resources.
@@ -39,8 +57,8 @@ public class ResourcePool {
 
   public ResourcePool(ResourcePoolEventHandler resourcePoolEventHandler) {
     id = generatePoolId();
-    localPool = new HashMap<ResourceInfo, Object>();
     this.resourcePoolEventHandler = resourcePoolEventHandler;
+    localPool = new HashMap<ResourceInfo, Object>();
   }
 
   public String getId() {
@@ -126,4 +144,192 @@ public class ResourcePool {
       localPool.remove(resourceInfoFromName(name));
     }
   }
+
+  public static Collection<ResourceInfo> searchAll (String location, String namePattern) {
+    Gson gson = new Gson();
+    List<ResourceInfo> searchedInfo = new LinkedList<ResourceInfo>();
+    List<InterpreterGroup> interpreterGroupToCheck =
+        new LinkedList<InterpreterGroup>();
+
+    // search over locally loaded interpreters
+    synchronized (InterpreterGroup.allInterpreterGroups) {
+      for (InterpreterGroup intpGroup : InterpreterGroup.allInterpreterGroups.values()) {
+        // local pool
+        ResourcePool pool = intpGroup.getResourcePool();
+        if (pool != null && location.equals(pool.getId())) {
+          searchedInfo.addAll(pool.search(namePattern));
+        }
+
+        String poolId = intpGroup.getResourcePoolId();
+        if (poolId != null && !poolId.equals(location)) {
+          continue;
+        }
+
+        interpreterGroupToCheck.add(intpGroup);
+      }
+    }
+
+    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
+    // connectionPool. that can be future improvements
+    for (InterpreterGroup intpGroup : interpreterGroupToCheck) {
+      // remote interpreter's pool
+      if (intpGroup.size() == 0) {
+        continue;
+      }
+      Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
+                                                     // in the same group uses
+                                                     // the same resource pool.
+
+      if (!(anyInterpreter instanceof RemoteInterpreter)) {
+        continue;
+      }
+
+      RemoteInterpreter r = (RemoteInterpreter) anyInterpreter;
+      InterpreterConnectionFactory cf = r.getInterpreterConnectionFactory();
+      if (cf == null || !cf.isRunning()) {
+        continue;
+      }
+
+      Client c;
+      try {
+        c = cf.getClient();
+      } catch (Exception e1) {
+        // just ignore the connection
+        continue;
+      }
+
+      try {
+        String poolId = intpGroup.getResourcePoolId();
+        if (poolId == null) {
+          poolId = c.getResourcePoolId();
+          intpGroup.setResourcePoolId(poolId);
+        }
+
+        if (location.equals(poolId)) {
+          Collection<ResourceInfo> infos = gson.fromJson(c.resourcePoolSearch(namePattern),
+              new TypeToken<Collection<ResourceInfo>>(){}.getType());
+
+          for (ResourceInfo info : infos) {
+            if (ResourcePool.match(location, namePattern, info)) {
+              searchedInfo.add(info);
+            }
+          }
+        }
+      } catch (TException e) {
+        e.printStackTrace();
+      } finally {
+        cf.releaseClient(c);
+      }
+    }
+
+    return searchedInfo;
+  }
+
+
+  public static Object getFromAll (String location, String name)
+      throws ClassNotFoundException, IOException {
+
+    List<InterpreterGroup> interpreterGroupToCheck =
+        new LinkedList<InterpreterGroup>();
+
+    // search over locally loaded interpreters
+    synchronized (InterpreterGroup.allInterpreterGroups) {
+      for (InterpreterGroup intpGroup : InterpreterGroup.allInterpreterGroups.values()) {
+        // local pool
+        ResourcePool pool = intpGroup.getResourcePool();
+        if (pool != null && location.equals(pool.getId())) {
+          return pool.get(name);
+        }
+
+        String poolId = intpGroup.getResourcePoolId();
+        if (poolId != null && !poolId.equals(location)) {
+          continue;
+        }
+
+        interpreterGroupToCheck.add(intpGroup);
+      }
+    }
+
+    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
+    // connectionPool. that can be future improvements
+    for (InterpreterGroup intpGroup : interpreterGroupToCheck) {
+      // remote interpreter's pool
+      if (intpGroup.size() == 0) {
+        continue;
+      }
+      Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
+                                                     // in the same group uses
+                                                     // the same resource pool.
+
+      if (!(anyInterpreter instanceof RemoteInterpreter)) {
+        continue;
+      }
+
+      RemoteInterpreter r = (RemoteInterpreter) anyInterpreter;
+      InterpreterConnectionFactory cf = r.getInterpreterConnectionFactory();
+      if (cf == null || !cf.isRunning()) {
+        continue;
+      }
+
+      Client c;
+      try {
+        c = cf.getClient();
+      } catch (Exception e1) {
+        // just ignore the connection
+        continue;
+      }
+
+      try {
+        String poolId = intpGroup.getResourcePoolId();
+        if (poolId == null) {
+          poolId = c.getResourcePoolId();
+          intpGroup.setResourcePoolId(poolId);
+        }
+
+        if (location.equals(poolId)) {
+          ByteBuffer buffer = c.resourcePoolGet(name);
+          return deserializeResource(buffer);
+        }
+      } catch (TException e) {
+        e.printStackTrace();
+      } finally {
+        cf.releaseClient(c);
+      }
+    }
+
+    return null;
+  }
+
+  public static ByteBuffer serializeResource(Object o) throws IOException {
+    if (o == null || !(o instanceof Serializable)) {
+      return null;
+    }
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ObjectOutputStream oos;
+    oos = new ObjectOutputStream(out);
+    oos.writeObject(o);
+    oos.close();
+    out.close();
+
+    return ByteBuffer.wrap(out.toByteArray());
+  }
+
+  public static Object deserializeResource(ByteBuffer buf)
+      throws IOException, ClassNotFoundException {
+    if (buf == null) {
+      return null;
+    }
+    InputStream ins = ByteBufferInputStream.get(buf);
+    ObjectInputStream oin;
+    Object object = null;
+
+    oin = new ObjectInputStream(ins);
+    object = oin.readObject();
+    oin.close();
+    ins.close();
+
+    return object;
+  }
+
+
 }

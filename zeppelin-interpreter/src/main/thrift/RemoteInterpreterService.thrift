@@ -52,6 +52,11 @@ struct RemoteInterpreterEvent {
   2: string data      // json serialized data
 }
 
+struct ApplicationResult {
+  1: i32 code,
+  2: string output
+}
+
 service RemoteInterpreterService {
   void createInterpreter(1: string className, 2: map<string, string> properties);
 
@@ -72,6 +77,7 @@ service RemoteInterpreterService {
   void angularObjectRemove(1: string name, 2: string noteId);
 
   # zeppelin server pushes data
+  string getResourcePoolId();
   void resourcePoolInfo(1: string location, 2: string namePattern, 3: string object);
   void resourcePoolObject(1: string location, 2: string name, 3: binary object);
   # zeppelin server poll data
@@ -80,6 +86,5 @@ service RemoteInterpreterService {
 
 
   # helium
-  i32 runApplication(1: string artifact, 2: string classname, 3: RemoteInterpreterContext interpreterContext);
-  void signalApplication(1: string artifact, 2: string classname, 3: RemoteInterpreterContext interpreterContext);
+  ApplicationResult runApplication(1: string artifact, 2: string classname, 3: RemoteInterpreterContext interpreterContext);
 }

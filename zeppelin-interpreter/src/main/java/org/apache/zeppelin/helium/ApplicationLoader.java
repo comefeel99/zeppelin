@@ -18,6 +18,7 @@ package org.apache.zeppelin.helium;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
@@ -35,16 +36,16 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 public class ApplicationLoader {
   private final ClassLoader parentClassLoader;
   private final DependencyResolver resolver;
-  private final Map<ApplicationSpec, Class<Application>> cached;
+  private final Map<ApplicationKey, Class<Application>> cached;
 
   public ApplicationLoader(ClassLoader parentClassLoader, DependencyResolver resolver) {
     this.parentClassLoader = parentClassLoader;
     this.resolver = resolver;
     cached = Collections.synchronizedMap(
-        new HashMap<ApplicationSpec, Class<Application>>());
+        new HashMap<ApplicationKey, Class<Application>>());
   }
 
-  public Class<Application> load(ApplicationSpec spec) throws Exception {
+  public Class<Application> load(ApplicationKey spec) throws Exception {
     if (cached.containsKey(spec)) {
       return cached.get(spec);
     }
@@ -73,13 +74,17 @@ public class ApplicationLoader {
     return cls;
   }
 
-  public void run(ApplicationSpec spec, InterpreterContext context)
-      throws Exception {
-    run(load(spec), context);
+  public void run(ApplicationKey spec, InterpreterContext context)
+      throws ApplicationException {
+    try {
+      run(load(spec), context);
+    } catch (Exception e) {
+      throw new ApplicationException(e);
+    }
   }
 
   public void run(Class<Application> appClass, InterpreterContext context)
-      throws Exception {
+      throws ApplicationException {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(appClass.getClassLoader());
 
@@ -89,8 +94,8 @@ public class ApplicationLoader {
 
       Application app = constructor.newInstance(context);
       app.execute();
-    } catch (NoSuchMethodException | SecurityException e) {
-      throw e;
+    } catch (Exception e) {
+      throw new ApplicationException(e);
     } finally {
       Thread.currentThread().setContextClassLoader(oldcl);
     }

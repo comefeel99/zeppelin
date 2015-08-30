@@ -83,7 +83,8 @@ public class RemoteInterpreterTest {
         new AngularObjectRegistry(intpGroup.getId(), null),
         new LinkedList<InterpreterContextRunner>(),
         new InterpreterOutput(),
-        new ResourcePool(null));
+        new ResourcePool(null),
+        null);
   }
 
 

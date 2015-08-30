@@ -130,9 +130,9 @@ public class RemoteInterpreterEventPoller extends Thread {
               runnerFromRemote.getNoteId(), runnerFromRemote.getParagraphId());
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_POOL_SEARCH) {
           ResourceKey searchKey = gson.fromJson(event.data, ResourceKey.class);
-          Collection<ResourceInfo> searchedInfo = searchResourceFromAllPool(
-              searchKey.location,
-              searchKey.name);
+
+          Collection<ResourceInfo> searchedInfo = ResourcePool.searchAll(
+              searchKey.location, searchKey.name);
 
           // send search result back to interpreter process
           Client c = connectionFactory.getClient();
@@ -149,7 +149,9 @@ public class RemoteInterpreterEventPoller extends Thread {
           }
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_POOL_GET) {
           ResourceKey searchKey = gson.fromJson(event.data, ResourceKey.class);
-          ByteBuffer object = getResourceFromAllPool(searchKey.location, searchKey.name);
+
+          Object object = ResourcePool.getFromAll(searchKey.location, searchKey.name);
+          ByteBuffer buffer = ResourcePool.serializeResource(object);
 
           // send search result back to interpreter process
           Client c = connectionFactory.getClient();
@@ -158,7 +160,7 @@ public class RemoteInterpreterEventPoller extends Thread {
             c.resourcePoolObject(
                 searchKey.location,
                 searchKey.name,
-                object);
+                buffer);
           } catch (TException e) {
             logger.error("error", e);
           } finally {
@@ -170,102 +172,6 @@ public class RemoteInterpreterEventPoller extends Thread {
         logger.error("Can't handle event " + event, e);
       }
     }
-  }
-
-  private ByteBuffer getResourceFromAllPool(String location, String name) {
-    Gson gson = new Gson();
-    List<InterpreterConnectionFactory> connectionFactoryToCheck =
-        new LinkedList<InterpreterConnectionFactory>();
-
-    synchronized (RemoteInterpreter.interpreterGroupReference) {
-      for (InterpreterConnectionFactory connectionFactory :
-        RemoteInterpreter.interpreterGroupReference.values()) {
-        if (!connectionFactory.isRunning()) {
-          continue;
-        }
-        connectionFactoryToCheck.add(connectionFactory);
-      }
-    }
-
-    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
-    // connectionPool. that can be future improvements
-    for (InterpreterConnectionFactory connectionFactory : connectionFactoryToCheck) {
-      Client c;
-      try {
-        c = connectionFactory.getClient();
-      } catch (Exception e1) {
-        // just ignore the connection
-        continue;
-      }
-
-      ByteBuffer object = null;
-      try {
-        Collection<ResourceInfo> infos = gson.fromJson(c.resourcePoolSearch(name),
-            new TypeToken<Collection<ResourceInfo>>(){}.getType());
-
-        for (ResourceInfo info : infos) {
-          if (ResourcePool.match(location, name, info)) {
-            object = c.resourcePoolGet(name);
-            if (object != null) {
-              return object;
-            }
-          }
-        }
-      } catch (TException e) {
-        logger.error("error", e);
-      } finally {
-        connectionFactory.releaseClient(c);
-      }
-    }
-
-    return null;
-  }
-
-  private Collection<ResourceInfo> searchResourceFromAllPool(String location, String name) {
-    Gson gson = new Gson();
-    List<InterpreterConnectionFactory> connectionFactoryToCheck =
-        new LinkedList<InterpreterConnectionFactory>();
-
-    synchronized (RemoteInterpreter.interpreterGroupReference) {
-      for (InterpreterConnectionFactory connectionFactory :
-        RemoteInterpreter.interpreterGroupReference.values()) {
-        if (!connectionFactory.isRunning()) {
-          continue;
-        }
-        connectionFactoryToCheck.add(connectionFactory);
-      }
-    }
-
-    List<ResourceInfo> searchedInfo = new LinkedList<ResourceInfo>();
-
-    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
-    // connectionPool. that can be future improvements
-    for (InterpreterConnectionFactory connectionFactory : connectionFactoryToCheck) {
-      Client c;
-      try {
-        c = connectionFactory.getClient();
-      } catch (Exception e1) {
-        // just ignore the connection
-        continue;
-      }
-
-      try {
-        Collection<ResourceInfo> infos = gson.fromJson(c.resourcePoolSearch(name),
-            new TypeToken<Collection<ResourceInfo>>(){}.getType());
-
-        for (ResourceInfo info : infos) {
-          if (ResourcePool.match(location, name, info)) {
-            searchedInfo.add(info);
-          }
-        }
-      } catch (TException e) {
-        logger.error("error", e);
-      } finally {
-        connectionFactory.releaseClient(c);
-      }
-    }
-
-    return searchedInfo;
   }
 
   private void waitQuietly() {

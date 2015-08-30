@@ -43,22 +43,30 @@ import java.util.Set;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
+import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectRegistryListener;
+import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.interpreter.Interpreter.RegisteredInterpreter;
+import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
 import org.apache.zeppelin.interpreter.remote.RemoteAngularObjectRegistry;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
+import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
+import org.apache.zeppelin.resource.ResourceInfo;
+import org.apache.zeppelin.resource.ResourcePool;
+import org.apache.zeppelin.resource.ResourcePoolEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Manage interpreters.
  *
  */
-public class InterpreterFactory {
+public class InterpreterFactory implements ResourcePoolEventHandler {
   Logger logger = LoggerFactory.getLogger(InterpreterFactory.class);
 
   private Map<String, URLClassLoader> cleanCl = Collections
@@ -395,6 +403,12 @@ public class InterpreterFactory {
             intp = createRepl(info.getPath(),
                 info.getClassName(),
                 properties);
+
+            interpreterGroup.setAppLoader(
+                new ApplicationLoader(
+                    ((ClassloaderInterpreter) intp).getClassloader(),
+                    new DependencyResolver(conf.getLocalRepoDir())));
+            interpreterGroup.setResourcePool(new ResourcePool(this));
           }
           interpreterGroup.add(intp);
           intp.setInterpreterGroup(interpreterGroup);
@@ -667,6 +681,23 @@ public class InterpreterFactory {
       return urls;
     } else {
       return new URL[] {path.toURI().toURL()};
+    }
+  }
+
+
+  @Override
+  public Collection<ResourceInfo> resourcePoolSearch(String location, String namePattern) {
+    return ResourcePool.searchAll(location, namePattern);
+  }
+
+
+  @Override
+  public Object resourcePoolGetObject(String location, String name) {
+    try {
+      return ResourcePool.getFromAll(location, name);
+    } catch (ClassNotFoundException | IOException e) {
+      logger.error("error", e);
+      return null;
     }
   }
 }

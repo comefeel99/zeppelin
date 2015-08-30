@@ -171,6 +171,7 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
         new AngularObjectRegistry(intpGroup1.getId(), null),
         new LinkedList<InterpreterContextRunner>(),
         new InterpreterOutput(),
-        new ResourcePool(null));
+        new ResourcePool(null),
+        null);
   }
 }

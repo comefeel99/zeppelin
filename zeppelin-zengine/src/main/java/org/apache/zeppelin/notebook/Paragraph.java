@@ -20,6 +20,7 @@ package org.apache.zeppelin.notebook;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.display.Input;
+import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.Interpreter.FormType;
 import org.apache.zeppelin.resource.ResourcePool;
@@ -56,6 +57,7 @@ public class Paragraph extends Job implements Serializable, Cloneable {
     dateUpdated = null;
     settings = new GUI();
     config = new HashMap<String, Object>();
+
   }
 
   private static String generateId() {
@@ -236,10 +238,14 @@ public class Paragraph extends Job implements Serializable, Cloneable {
 
   private InterpreterContext getInterpreterContext() {
     AngularObjectRegistry registry = null;
+    ResourcePool resourcePool = null;
+    ApplicationLoader appLoader = null;
 
     if (!getNoteReplLoader().getInterpreterSettings().isEmpty()) {
       InterpreterSetting intpGroup = getNoteReplLoader().getInterpreterSettings().get(0);
       registry = intpGroup.getInterpreterGroup().getAngularObjectRegistry();
+      resourcePool = intpGroup.getInterpreterGroup().getResourcePool();
+      appLoader = intpGroup.getInterpreterGroup().getAppLoader();
     }
 
     List<InterpreterContextRunner> runners = new LinkedList<InterpreterContextRunner>();
@@ -257,7 +263,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
             registry,
             runners,
             new InterpreterOutput(),
-            null);   // Resource pool is not implemented in local interpreter mode;
+            resourcePool,
+            appLoader);
     return interpreterContext;
   }
 

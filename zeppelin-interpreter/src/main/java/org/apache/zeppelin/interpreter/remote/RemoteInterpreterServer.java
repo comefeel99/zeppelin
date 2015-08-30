@@ -17,13 +17,13 @@
 
 package org.apache.zeppelin.interpreter.remote;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -45,6 +45,7 @@ import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
+import org.apache.zeppelin.helium.ApplicationKey;
 import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
@@ -58,6 +59,7 @@ import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.LazyOpenInterpreter;
+import org.apache.zeppelin.interpreter.thrift.ApplicationResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEventType;
@@ -81,10 +83,8 @@ import com.google.gson.reflect.TypeToken;
 /**
  *
  */
-public class RemoteInterpreterServer
-  extends Thread
-  implements RemoteInterpreterService.Iface, AngularObjectRegistryListener,
-    ResourcePoolEventHandler {
+public class RemoteInterpreterServer extends Thread implements RemoteInterpreterService.Iface,
+    AngularObjectRegistryListener, ResourcePoolEventHandler {
   Logger logger = LoggerFactory.getLogger(RemoteInterpreterServer.class);
 
   InterpreterGroup interpreterGroup;
@@ -108,7 +108,6 @@ public class RemoteInterpreterServer
     resourcePool = new ResourcePool(this);
     interpreterGroup.setAngularObjectRegistry(angularObjectRegistry);
 
-
     appLoader = createAppLoader(localRepo);
 
     processor = new RemoteInterpreterService.Processor<RemoteInterpreterServer>(this);
@@ -117,7 +116,6 @@ public class RemoteInterpreterServer
         new TThreadPoolServer.Args(serverTransport).processor(processor));
 
   }
-
 
   private ApplicationLoader createAppLoader(String localRepo) {
     // create app loader
@@ -170,17 +168,15 @@ public class RemoteInterpreterServer
     }
   }
 
-
-  public static void main(String[] args)
-      throws Exception {
+  public static void main(String[] args) throws Exception {
     int port = Integer.parseInt(args[0]);
     String localRepo = args[1];
-    RemoteInterpreterServer remoteInterpreterServer = new RemoteInterpreterServer(port, localRepo);
+    RemoteInterpreterServer remoteInterpreterServer =
+        new RemoteInterpreterServer(port, localRepo);
     remoteInterpreterServer.start();
     remoteInterpreterServer.join();
     System.exit(0);
   }
-
 
   @Override
   public void createInterpreter(String className, Map<String, String> properties)
@@ -190,22 +186,21 @@ public class RemoteInterpreterServer
       Properties p = new Properties();
       p.putAll(properties);
 
-      Constructor<Interpreter> constructor =
-          replClass.getConstructor(new Class[] {Properties.class});
+      Constructor<Interpreter> constructor = replClass
+          .getConstructor(new Class[] { Properties.class });
       Interpreter repl = constructor.newInstance(p);
 
       ClassLoader cl = ClassLoader.getSystemClassLoader();
-      repl.setClassloaderUrls(new URL[]{});
+      repl.setClassloaderUrls(new URL[] {});
 
       synchronized (interpreterGroup) {
-        interpreterGroup.add(new LazyOpenInterpreter(
-            new ClassloaderInterpreter(repl, cl)));
+        interpreterGroup.add(new LazyOpenInterpreter(new ClassloaderInterpreter(repl, cl)));
       }
       logger.info("Instantiate interpreter {}", className);
       repl.setInterpreterGroup(interpreterGroup);
     } catch (ClassNotFoundException | NoSuchMethodException | SecurityException
-        | InstantiationException | IllegalAccessException
-        | IllegalArgumentException | InvocationTargetException e) {
+        | InstantiationException | IllegalAccessException | IllegalArgumentException
+        | InvocationTargetException e) {
       e.printStackTrace();
       throw new TException(e);
     }
@@ -219,8 +214,8 @@ public class RemoteInterpreterServer
         }
       }
     }
-    throw new TException(new InterpreterException("Interpreter instance "
-        + className + " not found"));
+    throw new TException(new InterpreterException("Interpreter instance " + className
+        + " not found"));
   }
 
   @Override
@@ -235,7 +230,6 @@ public class RemoteInterpreterServer
     intp.close();
   }
 
-
   @Override
   public RemoteInterpreterResult interpret(String className, String st,
       RemoteInterpreterContext interpreterContext) throws TException {
@@ -244,14 +238,9 @@ public class RemoteInterpreterServer
 
     Scheduler scheduler = intp.getScheduler();
     InterpretJobListener jobListener = new InterpretJobListener();
-    InterpretJob job = new InterpretJob(
-        interpreterContext.getParagraphId(),
-        interpreterContext.getParagraphId(),
-        jobListener,
-        JobProgressPoller.DEFAULT_INTERVAL_MSEC,
-        intp,
-        st,
-        context);
+    InterpretJob job = new InterpretJob(interpreterContext.getParagraphId(),
+        interpreterContext.getParagraphId(), jobListener, JobProgressPoller.DEFAULT_INTERVAL_MSEC,
+        intp, st, context);
 
     scheduler.submit(job);
 
@@ -270,9 +259,7 @@ public class RemoteInterpreterServer
     } else {
       result = (InterpreterResult) job.getReturn();
     }
-    return convert(result,
-        context.getConfig(),
-        context.getGui());
+    return convert(result, context.getConfig(), context.getGui());
   }
 
   class InterpretJobListener implements JobListener {
@@ -299,13 +286,8 @@ public class RemoteInterpreterServer
     private String script;
     private InterpreterContext context;
 
-    public InterpretJob(
-        String jobId,
-        String jobName,
-        JobListener listener,
-        long progressUpdateIntervalMsec,
-        Interpreter interpreter,
-        String script,
+    public InterpretJob(String jobId, String jobName, JobListener listener,
+        long progressUpdateIntervalMsec, Interpreter interpreter, String script,
         InterpreterContext context) {
       super(jobId, jobName, listener, progressUpdateIntervalMsec);
       this.interpreter = interpreter;
@@ -356,7 +338,6 @@ public class RemoteInterpreterServer
     return true;
   }
 
-
   @Override
   public void cancel(String className, RemoteInterpreterContext interpreterContext)
       throws TException {
@@ -370,7 +351,6 @@ public class RemoteInterpreterServer
     Interpreter intp = getInterpreter(className);
     return intp.getProgress(convert(interpreterContext));
   }
-
 
   @Override
   public String getFormType(String className) throws TException {
@@ -387,30 +367,24 @@ public class RemoteInterpreterServer
   private InterpreterContext convert(RemoteInterpreterContext ric) {
     List<InterpreterContextRunner> contextRunners = new LinkedList<InterpreterContextRunner>();
     List<InterpreterContextRunner> runners = gson.fromJson(ric.getRunners(),
-        new TypeToken<List<RemoteInterpreterContextRunner>>(){}.getType());
+        new TypeToken<List<RemoteInterpreterContextRunner>>() {
+        }.getType());
 
     for (InterpreterContextRunner r : runners) {
       contextRunners.add(new ParagraphRunner(this, r.getNoteId(), r.getParagraphId()));
     }
 
-    return new InterpreterContext(
-        ric.getNoteId(),
-        ric.getParagraphId(),
-        ric.getParagraphTitle(),
-        ric.getParagraphText(),
-        (Map<String, Object>) gson.fromJson(ric.getConfig(),
-            new TypeToken<Map<String, Object>>() {}.getType()),
-        gson.fromJson(ric.getGui(), GUI.class),
-        interpreterGroup.getAngularObjectRegistry(),
-        contextRunners,
-        createInterpreterOutput(),
-        resourcePool);
+    return new InterpreterContext(ric.getNoteId(), ric.getParagraphId(), ric.getParagraphTitle(),
+        ric.getParagraphText(), (Map<String, Object>) gson.fromJson(ric.getConfig(),
+            new TypeToken<Map<String, Object>>() {
+            }.getType()), gson.fromJson(ric.getGui(), GUI.class),
+        interpreterGroup.getAngularObjectRegistry(), contextRunners, createInterpreterOutput(),
+        resourcePool, appLoader);
   }
 
   protected InterpreterOutput createInterpreterOutput() {
     return new InterpreterOutput();
   }
-
 
   static class ParagraphRunner extends InterpreterContextRunner {
 
@@ -425,24 +399,18 @@ public class RemoteInterpreterServer
     public void run() {
       Gson gson = new Gson();
       server.sendEvent(new RemoteInterpreterEvent(
-          RemoteInterpreterEventType.RUN_INTERPRETER_CONTEXT_RUNNER,
-          gson.toJson(this)));
+          RemoteInterpreterEventType.RUN_INTERPRETER_CONTEXT_RUNNER, gson.toJson(this)));
     }
   }
 
-  private RemoteInterpreterResult convert(InterpreterResult result,
-      Map<String, Object> config, GUI gui) {
-    return new RemoteInterpreterResult(
-        result.code().name(),
-        result.type().name(),
-        result.message(),
-        gson.toJson(config),
-        gson.toJson(gui));
+  private RemoteInterpreterResult convert(InterpreterResult result, Map<String, Object> config,
+      GUI gui) {
+    return new RemoteInterpreterResult(result.code().name(), result.type().name(),
+        result.message(), gson.toJson(config), gson.toJson(gui));
   }
 
   @Override
-  public String getStatus(String jobId)
-      throws TException {
+  public String getStatus(String jobId) throws TException {
     synchronized (interpreterGroup) {
       for (Interpreter intp : interpreterGroup) {
         for (Job job : intp.getScheduler().getJobsRunning()) {
@@ -461,18 +429,16 @@ public class RemoteInterpreterServer
     return "Unknown";
   }
 
-
-
   @Override
   public void onAdd(String interpreterGroupId, AngularObject object) {
-    sendEvent(new RemoteInterpreterEvent(
-        RemoteInterpreterEventType.ANGULAR_OBJECT_ADD, gson.toJson(object)));
+    sendEvent(new RemoteInterpreterEvent(RemoteInterpreterEventType.ANGULAR_OBJECT_ADD,
+        gson.toJson(object)));
   }
 
   @Override
   public void onUpdate(String interpreterGroupId, AngularObject object) {
-    sendEvent(new RemoteInterpreterEvent(
-        RemoteInterpreterEventType.ANGULAR_OBJECT_UPDATE, gson.toJson(object)));
+    sendEvent(new RemoteInterpreterEvent(RemoteInterpreterEventType.ANGULAR_OBJECT_UPDATE,
+        gson.toJson(object)));
   }
 
   @Override
@@ -481,8 +447,8 @@ public class RemoteInterpreterServer
     removeObject.put("name", name);
     removeObject.put("noteId", noteId);
 
-    sendEvent(new RemoteInterpreterEvent(
-        RemoteInterpreterEventType.ANGULAR_OBJECT_REMOVE, gson.toJson(removeObject)));
+    sendEvent(new RemoteInterpreterEvent(RemoteInterpreterEventType.ANGULAR_OBJECT_REMOVE,
+        gson.toJson(removeObject)));
   }
 
   public void sendEvent(RemoteInterpreterEvent event) {
@@ -512,15 +478,16 @@ public class RemoteInterpreterServer
 
   /**
    * called when object is updated in client (web) side.
+   *
    * @param className
    * @param name
-   * @param noteId noteId where the update issues
+   * @param noteId
+   *          noteId where the update issues
    * @param object
    * @throws TException
    */
   @Override
-  public void angularObjectUpdate(String name, String noteId, String object)
-      throws TException {
+  public void angularObjectUpdate(String name, String noteId, String object) throws TException {
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
     // first try local objects
     AngularObject ao = registry.get(name, noteId);
@@ -536,7 +503,7 @@ public class RemoteInterpreterServer
 
     Object oldObject = ao.get();
     Object value = null;
-    if (oldObject != null) {  // first try with previous object's type
+    if (oldObject != null) { // first try with previous object's type
       try {
         value = gson.fromJson(object, oldObject.getClass());
         ao.set(value, false);
@@ -549,9 +516,8 @@ public class RemoteInterpreterServer
     // Generic java object type for json.
     if (value == null) {
       try {
-        value = gson.fromJson(object,
-          new TypeToken<Map<String, Object>>() {
-          }.getType());
+        value = gson.fromJson(object, new TypeToken<Map<String, Object>>() {
+        }.getType());
       } catch (Exception e) {
         // no lock
       }
@@ -566,12 +532,11 @@ public class RemoteInterpreterServer
   }
 
   /**
-   * When zeppelinserver initiate angular object add.
-   * Dont't need to emit event to zeppelin server
+   * When zeppelinserver initiate angular object add. Dont't need to emit event
+   * to zeppelin server
    */
   @Override
-  public void angularObjectAdd(String name, String noteId, String object)
-      throws TException {
+  public void angularObjectAdd(String name, String noteId, String object) throws TException {
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
     // first try local objects
     AngularObject ao = registry.get(name, noteId);
@@ -583,9 +548,8 @@ public class RemoteInterpreterServer
     // Generic java object type for json.
     Object value = null;
     try {
-      value = gson.fromJson(object,
-          new TypeToken<Map<String, Object>>() {
-          }.getType());
+      value = gson.fromJson(object, new TypeToken<Map<String, Object>>() {
+      }.getType());
     } catch (Exception e) {
       // nolock
     }
@@ -604,7 +568,6 @@ public class RemoteInterpreterServer
     registry.remove(name, noteId, false);
   }
 
-
   // Resource pool -----
 
   List<ResourceKey> resourcePoolsearchEventQueue = new LinkedList<ResourceKey>();
@@ -620,8 +583,8 @@ public class RemoteInterpreterServer
       int i = resourcePoolsearchEventQueue.indexOf(key);
       if (i < 0) {
         // not found. ignore event
-        logger.warn("Got search result for location={}, name={}, but no handler found",
-            location, namePattern);
+        logger.warn("Got search result for location={}, name={}, but no handler found", location,
+            namePattern);
       } else {
         r = resourcePoolsearchEventQueue.remove(i);
       }
@@ -646,22 +609,17 @@ public class RemoteInterpreterServer
       int i = resourcePoolgetEventQueue.indexOf(key);
       if (i < 0) {
         // not found. ignore event
-        logger.warn("Got resource from pool location={}, name={}, but no handler found",
-            location, name);
+        logger.warn("Got resource from pool location={}, name={}, but no handler found", location,
+            name);
       } else {
         r = resourcePoolgetEventQueue.remove(i);
       }
     }
 
     if (r != null) {
-      InputStream ins = ByteBufferInputStream.get(byteBuffer);
-      ObjectInputStream oin;
       Object object = null;
       try {
-        oin = new ObjectInputStream(ins);
-        object = oin.readObject();
-        oin.close();
-        ins.close();
+        object = ResourcePool.deserializeResource(byteBuffer);
       } catch (ClassNotFoundException | IOException e) {
         logger.error("error", e);
       }
@@ -673,7 +631,6 @@ public class RemoteInterpreterServer
       }
     }
   }
-
 
   /**
    * ZeppelinServer searches local pool
@@ -694,35 +651,19 @@ public class RemoteInterpreterServer
   @Override
   public ByteBuffer resourcePoolGet(String name) throws TException {
     Object o = resourcePool.get(resourcePool.getId(), name);
-    if (o == null) {
-      return null;
-    } else {
-      if (!(o instanceof Serializable)) {
-        return null;
-      }
-
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      ObjectOutputStream oos;
-      try {
-        oos = new ObjectOutputStream(out);
-        oos.writeObject(o);
-        oos.close();
-        out.close();
-      } catch (IOException e) {
-        logger.error("error", e);
-        return null;
-      }
-
-      return ByteBuffer.wrap(out.toByteArray());
+    try {
+      return ResourcePool.serializeResource(o);
+    } catch (IOException e) {
+      logger.error("error", e);
     }
+    return null;
   }
 
   @Override
   public Collection<ResourceInfo> resourcePoolSearch(String location, String namePattern) {
     ResourceKey r = new ResourceKey(location, namePattern);
     RemoteInterpreterEvent event = new RemoteInterpreterEvent(
-        RemoteInterpreterEventType.RESOURCE_POOL_SEARCH,
-        gson.toJson(r));
+        RemoteInterpreterEventType.RESOURCE_POOL_SEARCH, gson.toJson(r));
 
     synchronized (resourcePoolsearchEventQueue) {
       resourcePoolsearchEventQueue.add(r);
@@ -744,8 +685,8 @@ public class RemoteInterpreterServer
       logger.error("Search timeout");
       return null;
     } else {
-      return gson.fromJson((String) r.object,
-          new TypeToken<Collection<ResourceInfo>>() {}.getType());
+      return gson.fromJson((String) r.object, new TypeToken<Collection<ResourceInfo>>() {
+      }.getType());
     }
   }
 
@@ -753,8 +694,7 @@ public class RemoteInterpreterServer
   public Object resourcePoolGetObject(String location, String name) {
     ResourceKey r = new ResourceKey(location, name);
     RemoteInterpreterEvent event = new RemoteInterpreterEvent(
-        RemoteInterpreterEventType.RESOURCE_POOL_GET,
-        gson.toJson(r));
+        RemoteInterpreterEventType.RESOURCE_POOL_GET, gson.toJson(r));
 
     synchronized (resourcePoolgetEventQueue) {
       resourcePoolgetEventQueue.add(r);
@@ -800,6 +740,26 @@ public class RemoteInterpreterServer
     }
   }
 
+  @Override
+  public String getResourcePoolId() throws TException {
+    return resourcePool.getId();
+  }
 
-
+  @Override
+  public ApplicationResult runApplication(String artifact, String classname,
+      RemoteInterpreterContext interpreterContext) throws TException {
+    InterpreterContext context = convert(interpreterContext);
+    try {
+      appLoader.run(new ApplicationKey(artifact, classname), context);
+    } catch (Exception e) {
+      logger.error("ApplicationError", e);
+      e.printStackTrace(new PrintWriter(context.out));
+    }
+    try {
+      return new ApplicationResult(0, new String(context.out.toByteArray(true)));
+    } catch (IOException e) {
+      logger.error("error", e);
+      return new ApplicationResult(1, e.getMessage());
+    }
+  }
 }
