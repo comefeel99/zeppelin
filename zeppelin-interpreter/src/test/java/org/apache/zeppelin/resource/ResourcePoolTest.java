@@ -146,6 +146,8 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
     infos = getResourceInfoFromResult(intpB.interpret("search " + ResourcePool.LOCATION_ANY + " " + ResourcePool.NAME_ANY, createInterpreterContext()).message());
     assertEquals(0, infos.size());
 
+    intpA.close();
+    intpB.close();
   }
 
   private Collection<ResourceInfo> getResourceInfoFromResult(String message) {
