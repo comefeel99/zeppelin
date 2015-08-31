@@ -18,7 +18,6 @@ package org.apache.zeppelin.helium;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
@@ -45,7 +44,7 @@ public class ApplicationLoader {
         new HashMap<ApplicationKey, Class<Application>>());
   }
 
-  public Class<Application> load(ApplicationKey spec) throws Exception {
+  private Class<Application> load(ApplicationKey spec) throws Exception {
     if (cached.containsKey(spec)) {
       return cached.get(spec);
     }
@@ -83,7 +82,7 @@ public class ApplicationLoader {
     }
   }
 
-  public void run(Class<Application> appClass, InterpreterContext context)
+  private void run(Class<Application> appClass, InterpreterContext context)
       throws ApplicationException {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(appClass.getClassLoader());

@@ -239,13 +239,11 @@ public class Paragraph extends Job implements Serializable, Cloneable {
   private InterpreterContext getInterpreterContext() {
     AngularObjectRegistry registry = null;
     ResourcePool resourcePool = null;
-    ApplicationLoader appLoader = null;
 
     if (!getNoteReplLoader().getInterpreterSettings().isEmpty()) {
       InterpreterSetting intpGroup = getNoteReplLoader().getInterpreterSettings().get(0);
       registry = intpGroup.getInterpreterGroup().getAngularObjectRegistry();
       resourcePool = intpGroup.getInterpreterGroup().getResourcePool();
-      appLoader = intpGroup.getInterpreterGroup().getAppLoader();
     }
 
     List<InterpreterContextRunner> runners = new LinkedList<InterpreterContextRunner>();
@@ -263,8 +261,7 @@ public class Paragraph extends Job implements Serializable, Cloneable {
             registry,
             runners,
             new InterpreterOutput(),
-            resourcePool,
-            appLoader);
+            resourcePool);
     return interpreterContext;
   }
 

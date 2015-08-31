@@ -17,14 +17,8 @@
 
 package org.apache.zeppelin.interpreter.remote;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -47,10 +41,8 @@ import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.helium.ApplicationKey;
 import org.apache.zeppelin.helium.ApplicationLoader;
-import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
 import org.apache.zeppelin.interpreter.Interpreter;
-import org.apache.zeppelin.interpreter.Interpreter.FormType;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterException;
@@ -379,7 +371,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
             new TypeToken<Map<String, Object>>() {
             }.getType()), gson.fromJson(ric.getGui(), GUI.class),
         interpreterGroup.getAngularObjectRegistry(), contextRunners, createInterpreterOutput(),
-        resourcePool, appLoader);
+        resourcePool);
   }
 
   protected InterpreterOutput createInterpreterOutput() {

@@ -32,6 +32,8 @@ import javax.ws.rs.core.Application;
 import org.apache.cxf.jaxrs.servlet.CXFNonSpringJaxrsServlet;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
+import org.apache.zeppelin.helium.Helium;
+import org.apache.zeppelin.helium.HeliumConf;
 import org.apache.zeppelin.interpreter.InterpreterFactory;
 import org.apache.zeppelin.notebook.Notebook;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
@@ -83,6 +85,10 @@ public class ZeppelinServer extends Application {
   public static void main(String[] args) throws Exception {
     ZeppelinConfiguration conf = ZeppelinConfiguration.create();
     conf.setProperty("args", args);
+
+    HeliumConf heliumConf = HeliumConf.create(new File(conf.getHeliumConfPath()));
+    Helium helium = new Helium(heliumConf, conf.getLocalRepoDir());
+    Helium.setSingleton(helium);
 
     jettyServer = setupJettyServer(conf);
 

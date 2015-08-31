@@ -107,6 +107,9 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
     intpGroup2.add(intpB);
     intpB.setInterpreterGroup(intpGroup2);
 
+    intpA.open();
+    intpB.open();
+
     // empty items in resource pool
     Collection<ResourceInfo> infos = getResourceInfoFromResult(intpA.interpret("search " + ResourcePool.LOCATION_ANY + " " + ResourcePool.NAME_ANY, createInterpreterContext()).message());
     assertEquals(0, infos.size());
@@ -171,7 +174,6 @@ public class ResourcePoolTest implements ResourcePoolEventHandler {
         new AngularObjectRegistry(intpGroup1.getId(), null),
         new LinkedList<InterpreterContextRunner>(),
         new InterpreterOutput(),
-        new ResourcePool(null),
-        null);
+        new ResourcePool(null));
   }
 }

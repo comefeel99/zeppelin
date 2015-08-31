@@ -154,15 +154,18 @@ public class ResourcePool {
     // search over locally loaded interpreters
     synchronized (InterpreterGroup.allInterpreterGroups) {
       for (InterpreterGroup intpGroup : InterpreterGroup.allInterpreterGroups.values()) {
-        // local pool
+        // local interpreter pool search
         ResourcePool pool = intpGroup.getResourcePool();
-        if (pool != null && location.equals(pool.getId())) {
-          searchedInfo.addAll(pool.search(namePattern));
-        }
-
-        String poolId = intpGroup.getResourcePoolId();
-        if (poolId != null && !poolId.equals(location)) {
-          continue;
+        if (pool != null) {
+          if (ResourcePool.LOCATION_ANY.equals(location) || location.equals(pool.getId())) {
+            searchedInfo.addAll(pool.search(namePattern));
+          }
+        } else {
+          String poolId = intpGroup.getResourcePoolId();
+          if (poolId != null &&
+              !(ResourcePool.LOCATION_ANY.equals(location) || location.equals(poolId))) {
+            continue;
+          }
         }
 
         interpreterGroupToCheck.add(intpGroup);
@@ -176,6 +179,7 @@ public class ResourcePool {
       if (intpGroup.size() == 0) {
         continue;
       }
+
       Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                      // in the same group uses
                                                      // the same resource pool.
@@ -186,6 +190,7 @@ public class ResourcePool {
 
       RemoteInterpreter r = (RemoteInterpreter) anyInterpreter;
       InterpreterConnectionFactory cf = r.getInterpreterConnectionFactory();
+
       if (cf == null || !cf.isRunning()) {
         continue;
       }
@@ -205,7 +210,7 @@ public class ResourcePool {
           intpGroup.setResourcePoolId(poolId);
         }
 
-        if (location.equals(poolId)) {
+        if (ResourcePool.LOCATION_ANY.equals(location) || location.equals(poolId)) {
           Collection<ResourceInfo> infos = gson.fromJson(c.resourcePoolSearch(namePattern),
               new TypeToken<Collection<ResourceInfo>>(){}.getType());
 

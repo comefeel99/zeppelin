@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public class InterpreterContextTest {
   private InterpreterContext createInterpreterContext() {
-    return new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null), null);
+    return new InterpreterContext(null, null, null, null, null, null, null, null, new InterpreterOutput(), new ResourcePool(null));
   }
 
 

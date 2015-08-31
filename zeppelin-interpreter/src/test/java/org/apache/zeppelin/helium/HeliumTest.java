@@ -22,7 +22,6 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.zeppelin.dep.DependencyResolver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,8 +46,7 @@ public class HeliumTest {
   @Test
   public void testHelium() throws IOException {
     HeliumConf conf = HeliumConf.create(new File(tmpDir, "helium.json"));
-    ApplicationLoader apploader = new ApplicationLoader(this.getClass().getClassLoader(), new DependencyResolver(tmpDir.getAbsolutePath()));
-    Helium helium = new Helium(conf, specDir.getAbsolutePath(), apploader);
+    Helium helium = new Helium(conf, specDir.getAbsolutePath());
     assertEquals(0, helium.getAllSpecs().size());
 
     // create one spec

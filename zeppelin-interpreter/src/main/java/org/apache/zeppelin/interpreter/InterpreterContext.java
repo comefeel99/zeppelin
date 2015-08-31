@@ -36,7 +36,6 @@ public class InterpreterContext {
   private final Map<String, Object> config;
   public final InterpreterOutput out;
   private final ResourcePool resourcePool;
-  private final ApplicationLoader appLoader;
   private GUI gui;
   private AngularObjectRegistry angularObjectRegistry;
   private List<InterpreterContextRunner> runners;
@@ -52,8 +51,7 @@ public class InterpreterContext {
                             AngularObjectRegistry angularObjectRegistry,
                             List<InterpreterContextRunner> runners,
                             InterpreterOutput out,
-                            ResourcePool resourcePool,
-                            ApplicationLoader appLoader
+                            ResourcePool resourcePool
                             ) {
     this.noteId = noteId;
     this.paragraphId = paragraphId;
@@ -65,7 +63,6 @@ public class InterpreterContext {
     this.runners = runners;
     this.out = out;
     this.resourcePool = resourcePool;
-    this.appLoader = appLoader;
   }
 
 
@@ -104,12 +101,6 @@ public class InterpreterContext {
   public List<InterpreterContextRunner> getRunners() {
     return runners;
   }
-
-  public ApplicationLoader getApplicationLoader() {
-    return appLoader;
-  }
-
-
 
   // Thread local variable containing each thread's ID
   private static final ThreadLocal<InterpreterContext> threadLocalInterpreterContexts =

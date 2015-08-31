@@ -16,7 +16,6 @@
  */
 package org.apache.zeppelin.helium;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,18 +29,29 @@ import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
 import org.apache.zeppelin.interpreter.thrift.ApplicationResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
 
+
 /**
  * Helium
  *
  */
 public class Helium {
+  static Helium singleton_instance = null;
   HeliumConf conf;
   private LocalSpecProvider localSpecProvider;
 
-  public Helium(HeliumConf conf, String localSpecDir, ApplicationLoader appLoader) {
+  public Helium(HeliumConf conf, String localSpecDir) {
     this.conf = conf;
     localSpecProvider = new LocalSpecProvider(localSpecDir);
   }
+
+  public static void setSingleton(Helium helium) {
+    Helium.singleton_instance = helium;
+  }
+
+  public static Helium singleton() {
+    return singleton_instance;
+  }
+
 
   public Collection<ApplicationSpec> getAllSpecs() {
     Collection<ApplicationSpec> localSpecs = localSpecProvider.get();
@@ -66,8 +76,9 @@ public class Helium {
       for (InterpreterGroup intpGroup : InterpreterGroup.allInterpreterGroups.values()) {
         String poolId = intpGroup.getResourcePoolId();
 
-        if (intpGroup.getResourcePool() != null) {  // local
+        if (intpGroup.getResourcePool() != null && poolId.equals(location)) {  // local
           intpGroup.getAppLoader().run(key, context);
+
           return;
         }
 
