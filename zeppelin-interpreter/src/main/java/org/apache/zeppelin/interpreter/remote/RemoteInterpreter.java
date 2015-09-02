@@ -366,7 +366,7 @@ public class RemoteInterpreter extends Interpreter {
         gson.toJson(ic.getRunners()));
   }
 
-  private InterpreterResult convert(RemoteInterpreterResult result) {
+  public static InterpreterResult convert(RemoteInterpreterResult result) {
     return new InterpreterResult(
         InterpreterResult.Code.valueOf(result.getCode()),
         Type.valueOf(result.getType()),

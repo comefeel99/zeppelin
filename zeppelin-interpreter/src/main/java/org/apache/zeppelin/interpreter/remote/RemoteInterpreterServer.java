@@ -302,22 +302,22 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       InterpreterResult result = interpreter.interpret(script, context);
 
       // add InterpreterOutput a head of the message
-      String message = null;
+      String output = null;
 
       byte[] interpreterOutput = context.out.toByteArray(clearInterpreterOutput());
       if (interpreterOutput != null) {
-        message = new String(interpreterOutput);
+        output = new String(interpreterOutput);
       }
 
       if (result.message() != null) {
-        if (message == null) {
-          message = result.toString();
+        if (output == null || output.length() == 0) {
+          output = result.toString();
         } else {
-          message += result.toString();
+          output += result.message();
         }
       }
 
-      return new InterpreterResult(result.code(), message);
+      return new InterpreterResult(result.code(), output);
     }
 
     @Override

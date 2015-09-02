@@ -33,7 +33,7 @@ public abstract class Application {
    * Application routine.
    * @return
    */
-  abstract int run();
+  protected abstract int run();
 
   /**
    * Send signal to this application.

@@ -85,12 +85,12 @@ public abstract class ZeppelinApplicationDevServer extends
    * execute application. This will be called when you run %dev paragraph in Zeppelin
    * @throws Exception
    */
-  protected abstract void onInterpret() throws Exception;
+  protected abstract void onInterpret(InterpreterContext context) throws Exception;
 
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
     try {
-      onInterpret();
+      onInterpret(context);
     } catch (Exception e) {
       throw new InterpreterException(e);
     }
