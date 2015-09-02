@@ -92,11 +92,13 @@
     <module>angular</module>
     <module>shell</module>
     <module>hive</module>
+    <module>phoenix</module>
     <module>geode</module>
     <module>postgresql</module>
     <module>tajo</module>
     <module>flink</module>
     <module>ignite</module>
+    <module>kylin</module>
     <module>lens</module>
     <module>cassandra</module>
     <module>zeppelin-web</module>
@@ -407,6 +409,7 @@
           <version>0.11</version>
           <configuration>
             <excludes>
+              <exclude>**/*.keywords</exclude>
               <exclude>**/.idea/</exclude>
               <exclude>**/*.iml</exclude>
               <exclude>.git/</exclude>

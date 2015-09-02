@@ -18,7 +18,7 @@
 package org.apache.zeppelin.conf;
 
 import java.net.URL;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -69,7 +69,7 @@ public class ZeppelinConfiguration extends XMLConfiguration {
 
   /**
    * Load from resource.
-   *
+   *url = ZeppelinConfiguration.class.getResource(ZEPPELIN_SITE_XML);
    * @throws ConfigurationException
    */
   public static ZeppelinConfiguration create() {
@@ -270,9 +270,9 @@ public class ZeppelinConfiguration extends XMLConfiguration {
 
   public String getKeyStorePath() {
     return getRelativeDir(
-        String.format("%s/%s",
-            getConfDir(),
-            getString(ConfVars.ZEPPELIN_SSL_KEYSTORE_PATH)));
+            String.format("%s/%s",
+                    getConfDir(),
+                    getString(ConfVars.ZEPPELIN_SSL_KEYSTORE_PATH)));
   }
 
   public String getKeyStoreType() {
@@ -356,15 +356,28 @@ public class ZeppelinConfiguration extends XMLConfiguration {
   }
 
   public String getRelativeDir(String path) {
-    if (path != null && path.startsWith("/")) {
+    if (path != null && path.startsWith("/") || isWindowsPath(path)) {
       return path;
     } else {
       return getString(ConfVars.ZEPPELIN_HOME) + "/" + path;
     }
   }
 
+  public boolean isWindowsPath(String path){
+    return path.matches("^[A-Za-z]:\\\\.*");
+  }
+
   public String getConfDir() {
     return getString(ConfVars.ZEPPELIN_CONF_DIR);
+  }
+
+  public List<String> getAllowedOrigins()
+  {
+    if (getString(ConfVars.ZEPPELIN_ALLOWED_ORIGINS).isEmpty()) {
+      return Arrays.asList(new String[0]);
+    }
+
+    return Arrays.asList(getString(ConfVars.ZEPPELIN_ALLOWED_ORIGINS).toLowerCase().split(","));
   }
 
 
@@ -397,6 +410,7 @@ public class ZeppelinConfiguration extends XMLConfiguration {
         + "org.apache.zeppelin.angular.AngularInterpreter,"
         + "org.apache.zeppelin.shell.ShellInterpreter,"
         + "org.apache.zeppelin.hive.HiveInterpreter,"
+        + "org.apache.zeppelin.phoenix.PhoenixInterpreter,"
         + "org.apache.zeppelin.tajo.TajoInterpreter,"
         + "org.apache.zeppelin.flink.FlinkInterpreter,"
         + "org.apache.zeppelin.ignite.IgniteInterpreter,"
@@ -404,7 +418,8 @@ public class ZeppelinConfiguration extends XMLConfiguration {
         + "org.apache.zeppelin.lens.LensInterpreter,"
         + "org.apache.zeppelin.cassandra.CassandraInterpreter,"
         + "org.apache.zeppelin.geode.GeodeOqlInterpreter,"
-        + "org.apache.zeppelin.postgresql.PostgreSqlInterpreter"),
+        + "org.apache.zeppelin.postgresql.PostgreSqlInterpreter,"
+        + "org.apache.zeppelin.kylin.KylinInterpreter"),
     ZEPPELIN_INTERPRETER_DIR("zeppelin.interpreter.dir", "interpreter"),
     ZEPPELIN_INTERPRETER_CONNECT_TIMEOUT("zeppelin.interpreter.connect.timeout", 30000),
     ZEPPELIN_ENCODING("zeppelin.encoding", "UTF-8"),
@@ -421,7 +436,10 @@ public class ZeppelinConfiguration extends XMLConfiguration {
     ZEPPELIN_NOTEBOOK_AUTO_INTERPRETER_BINDING("zeppelin.notebook.autoInterpreterBinding", true),
     ZEPPELIN_CONF_DIR("zeppelin.conf.dir", "conf"),
     // local repository for dependency downloading
-    ZEPPELIN_DEP_LOCALREPO("zeppelin.dep.localrepo", "local-repo");
+    ZEPPELIN_DEP_LOCALREPO("zeppelin.dep.localrepo", "local-repo"),
+    // Allows a way to specify a ',' separated list of allowed origins for rest and websockets
+    // i.e. http://localhost:8080
+    ZEPPELIN_ALLOWED_ORIGINS("zeppelin.server.allowed.origins", "*");
 
     private String varName;
     @SuppressWarnings("rawtypes")

@@ -41,6 +41,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.NullArgumentException;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.dep.DependencyResolver;
@@ -322,9 +323,11 @@ public class InterpreterFactory implements ResourcePoolEventHandler {
     List<RegisteredInterpreter> registeredInterpreters = new LinkedList<RegisteredInterpreter>();
 
     for (String className : interpreterClassList) {
-      registeredInterpreters.add(Interpreter.findRegisteredInterpreterByClassName(className));
+      RegisteredInterpreter ri = Interpreter.findRegisteredInterpreterByClassName(className);
+      if (ri != null) {
+        registeredInterpreters.add(ri);
+      }
     }
-
     return registeredInterpreters;
   }
 
@@ -361,7 +364,14 @@ public class InterpreterFactory implements ResourcePoolEventHandler {
       String groupName,
       InterpreterOption option,
       Properties properties)
-      throws InterpreterException {
+      throws InterpreterException , NullArgumentException {
+
+    //When called from REST API without option we receive NPE
+    if (option == null )
+      throw new NullArgumentException("option");
+    //When called from REST API without option we receive NPE
+    if (properties == null )
+      throw new NullArgumentException("properties");
 
     AngularObjectRegistry angularObjectRegistry;
 
@@ -608,7 +618,7 @@ public class InterpreterFactory implements ResourcePoolEventHandler {
           separateCL = false;
         }
       } catch (Exception e) {
-        // nothing to do.
+        logger.error("exception checking server classloader driver" , e);
       }
 
       URLClassLoader cl;
