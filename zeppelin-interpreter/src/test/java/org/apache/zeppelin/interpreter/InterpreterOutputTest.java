@@ -18,9 +18,11 @@ package org.apache.zeppelin.interpreter;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.URL;
 
 import org.junit.After;
 import org.junit.Before;
@@ -55,9 +57,5 @@ public class InterpreterOutputTest {
     assertEquals("hello", new String(out.toByteArray()));
   }
 
-  @Test
-  public void testWatch() {
-
-  }
 
 }

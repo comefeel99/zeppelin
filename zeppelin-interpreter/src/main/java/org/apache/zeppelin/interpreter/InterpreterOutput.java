@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -89,6 +90,23 @@ public class InterpreterOutput extends OutputStream {
     }
   }
 
+  public void write(String string) throws IOException {
+    write(string.getBytes());
+  }
+
+  /**
+   * write contents in the resource file in the classpath
+   * @param resourcePath
+   * @throws IOException
+   */
+  public void write(URL url) throws IOException {
+    if ("file".equals(url.getProtocol())) {
+      write(new File(url.getPath()));
+    } else {
+      outList.add(url);
+    }
+  }
+
   public byte[] toByteArray() throws IOException {
     return toByteArray(false);
   }
@@ -107,6 +125,10 @@ public class InterpreterOutput extends OutputStream {
           out.write((byte[]) o);
         } else if (o instanceof Integer) {
           out.write((int) o);
+        } else if (o instanceof URL) {
+          InputStream fin = ((URL) o).openStream();
+          copyStream(fin, out);
+          fin.close();
         } else {
           // can not handle the object
         }
