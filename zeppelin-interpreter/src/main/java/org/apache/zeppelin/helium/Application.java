@@ -17,6 +17,9 @@
 
 package org.apache.zeppelin.helium;
 
+import org.apache.zeppelin.display.AngularObject;
+import org.apache.zeppelin.display.AngularObjectRegistry;
+import org.apache.zeppelin.display.AngularObjectWatcher;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 
 /**
@@ -24,6 +27,22 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
  */
 public abstract class Application {
   private InterpreterContext context;
+  private Watcher watcher;
+
+  private class Watcher extends AngularObjectWatcher {
+
+    private String name;
+
+    public Watcher(String name, InterpreterContext context) {
+      super(context);
+      this.name = name;
+    }
+
+    @Override
+    public void watch(Object oldObject, Object newObject, InterpreterContext context) {
+      onChange(name, oldObject, newObject);
+    }
+  }
 
   public Application(InterpreterContext context) {
     this.context = context;
@@ -32,8 +51,17 @@ public abstract class Application {
   /**
    * Application routine.
    * @return
+   * @throws ApplicationException
    */
-  protected abstract int run();
+  protected abstract void run() throws ApplicationException;
+
+  /**
+   * On change watching data
+   * @param name
+   * @param oldObject
+   * @param newObject
+   */
+  protected abstract void onChange(String name, Object oldObject, Object newObject);
 
   /**
    * Send signal to this application.
@@ -45,15 +73,48 @@ public abstract class Application {
    * Get interpreter context that this application is running
    * @return
    */
-  InterpreterContext getInterpreterContext() {
+  public InterpreterContext getInterpreterContext() {
     return context;
   }
 
   /**
    * Execute this application
    * @return
+   * @throws ApplicationException
    */
-  public int execute() {
-    return run();
+  public void execute() throws ApplicationException {
+    run();
+  }
+
+
+  /**
+   * Bind object to angular scope
+   * @param name
+   * @param o
+   */
+  protected void bind(String name, Object o) {
+    AngularObjectRegistry registry = context.getAngularObjectRegistry();
+    registry.add(name, o, context.getNoteId(), context.getParagraphId());
+  }
+
+  protected void unbind(String name, Object o) {
+    AngularObjectRegistry registry = context.getAngularObjectRegistry();
+    registry.remove(name, context.getNoteId(), context.getParagraphId());
+  }
+
+  protected void watch(String name) {
+    AngularObjectRegistry registry = context.getAngularObjectRegistry();
+    AngularObject ao = registry.get(name, context.getNoteId(), context.getParagraphId());
+    if (ao != null) {
+      ao.addWatcher(new Watcher(name, context));
+    }
+  }
+
+  protected void unwatch(String name) {
+    AngularObjectRegistry registry = context.getAngularObjectRegistry();
+    AngularObject ao = registry.get(name, context.getNoteId(), context.getParagraphId());
+    if (ao != null) {
+      ao.clearAllWatchers();
+    }
   }
 }
