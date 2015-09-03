@@ -434,10 +434,11 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   }
 
   @Override
-  public void onRemove(String interpreterGroupId, String name, String noteId) {
+  public void onRemove(String interpreterGroupId, String name, String noteId, String paragraphId) {
     Map<String, String> removeObject = new HashMap<String, String>();
     removeObject.put("name", name);
     removeObject.put("noteId", noteId);
+    removeObject.put("paragraphId", paragraphId);
 
     sendEvent(new RemoteInterpreterEvent(RemoteInterpreterEventType.ANGULAR_OBJECT_REMOVE,
         gson.toJson(removeObject)));
@@ -479,10 +480,11 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
    * @throws TException
    */
   @Override
-  public void angularObjectUpdate(String name, String noteId, String object) throws TException {
+  public void angularObjectUpdate(String name, String noteId, String paragraphId, String object)
+      throws TException {
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
     // first try local objects
-    AngularObject ao = registry.get(name, noteId);
+    AngularObject ao = registry.get(name, noteId, paragraphId);
     if (ao == null) {
       logger.error("Angular object {} not exists", name);
       return;
@@ -528,12 +530,13 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
    * to zeppelin server
    */
   @Override
-  public void angularObjectAdd(String name, String noteId, String object) throws TException {
+  public void angularObjectAdd(String name, String noteId, String paragraphId, String object)
+      throws TException {
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
     // first try local objects
-    AngularObject ao = registry.get(name, noteId);
+    AngularObject ao = registry.get(name, noteId, paragraphId);
     if (ao != null) {
-      angularObjectUpdate(name, noteId, object);
+      angularObjectUpdate(name, noteId, paragraphId, object);
       return;
     }
 
@@ -551,13 +554,14 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       value = gson.fromJson(object, String.class);
     }
 
-    registry.add(name, value, noteId, false);
+    registry.add(name, value, noteId, paragraphId, false);
   }
 
   @Override
-  public void angularObjectRemove(String name, String noteId) throws TException {
+  public void angularObjectRemove(String name, String noteId, String paragraphId)
+      throws TException {
     AngularObjectRegistry registry = interpreterGroup.getAngularObjectRegistry();
-    registry.remove(name, noteId, false);
+    registry.remove(name, noteId, paragraphId, false);
   }
 
   // Resource pool -----

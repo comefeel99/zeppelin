@@ -45,32 +45,33 @@ public class AngularObjectRegistryTest {
           }
 
           @Override
-          public void onRemove(String interpreterGroupId, String name, String noteId) {
+          public void onRemove(String interpreterGroupId, String name,
+              String noteId, String paragraphId) {
             onRemove.incrementAndGet();
           }
     });
 
-    registry.add("name1", "value1", "note1");
-    assertEquals(1, registry.getAll("note1").size());
+    registry.add("name1", "value1", "note1", "paragraph1");
+    assertEquals(1, registry.getAll("note1", null).size());
     assertEquals(1, onAdd.get());
     assertEquals(0, onUpdate.get());
 
-    registry.get("name1", "note1").set("newValue");
+    registry.get("name1", "note1", "paragraph1").set("newValue");
     assertEquals(1, onUpdate.get());
 
-    registry.remove("name1", "note1");
-    assertEquals(0, registry.getAll("note1").size());
+    registry.remove("name1", "note1", "paragraph1");
+    assertEquals(0, registry.getAll("note1", "paragraph1").size());
     assertEquals(1, onRemove.get());
 
-    assertEquals(null, registry.get("name1", "note1"));
-    
+    assertEquals(null, registry.get("name1", "note1", "paragraph1"));
+
     // namespace
-    registry.add("name1", "value11", "note2");
-    assertEquals("value11", registry.get("name1", "note2").get());
-    assertEquals(null, registry.get("name1", "note1"));
-    
+    registry.add("name1", "value11", "note2", "paragraph1");
+    assertEquals("value11", registry.get("name1", "note2", "paragraph1").get());
+    assertEquals(null, registry.get("name1", "note1", "paragraph1"));
+
     // null namespace
-    registry.add("name1", "global1", null);
-    assertEquals("global1", registry.get("name1", null).get());
+    registry.add("name1", "global1", null, null);
+    assertEquals("global1", registry.get("name1", null, null).get());
   }
 }

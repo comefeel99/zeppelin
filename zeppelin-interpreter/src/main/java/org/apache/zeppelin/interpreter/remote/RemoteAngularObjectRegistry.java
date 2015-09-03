@@ -67,9 +67,11 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
    * @param name
    * @param o
    * @param noteId
+   * @param paragraphId
    * @return
    */
-  public AngularObject addAndNotifyRemoteProcess(String name, Object o, String noteId) {
+  public AngularObject addAndNotifyRemoteProcess(String name, Object o,
+      String noteId, String paragraphId) {
     Gson gson = new Gson();
     InterpreterConnectionFactory connectionFactory = getRemoteInterpreterProcess();
     if (!connectionFactory.isRunning()) {
@@ -79,8 +81,8 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
     Client client = null;
     try {
       client = connectionFactory.getClient();
-      client.angularObjectAdd(name, noteId, gson.toJson(o));
-      return super.add(name, o, noteId, true);
+      client.angularObjectAdd(name, noteId, paragraphId, gson.toJson(o));
+      return super.add(name, o, noteId, paragraphId, true);
     } catch (Exception e) {
       logger.error("Error", e);
     } finally {
@@ -99,7 +101,8 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
    * @param emit
    * @return
    */
-  public AngularObject removeAndNotifyRemoteProcess(String name, String noteId) {
+  public AngularObject removeAndNotifyRemoteProcess(
+      String name, String noteId, String paragraphId) {
     InterpreterConnectionFactory connectionFactory = getRemoteInterpreterProcess();
     if (!connectionFactory.isRunning()) {
       return null;
@@ -108,8 +111,8 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
     Client client = null;
     try {
       client = connectionFactory.getClient();
-      client.angularObjectRemove(name, noteId);
-      return super.remove(name, noteId);
+      client.angularObjectRemove(name, noteId, paragraphId);
+      return super.remove(name, noteId, paragraphId);
     } catch (Exception e) {
       logger.error("Error", e);
     } finally {
@@ -120,20 +123,21 @@ public class RemoteAngularObjectRegistry extends AngularObjectRegistry {
     return null;
   }
 
-  public void removeAllAndNotifyRemoteProcess(String noteId) {
-    List<AngularObject> all = getAll(noteId);
+  public void removeAllAndNotifyRemoteProcess(String noteId, String paragraphId) {
+    List<AngularObject> all = getAll(noteId, paragraphId);
     for (AngularObject ao : all) {
-      removeAndNotifyRemoteProcess(ao.getName(), noteId);
+      removeAndNotifyRemoteProcess(ao.getName(), noteId, paragraphId);
     }
   }
 
   @Override
-  protected AngularObject createNewAngularObject(String name, Object o, String noteId) {
+  protected AngularObject createNewAngularObject(String name, Object o,
+      String noteId, String paragraphId) {
     InterpreterConnectionFactory remoteInterpreterProcess = getRemoteInterpreterProcess();
     if (remoteInterpreterProcess == null) {
       throw new RuntimeException("Remote Interpreter process not found");
     }
-    return new RemoteAngularObject(name, o, noteId, getInterpreterGroupId(),
+    return new RemoteAngularObject(name, o, noteId, paragraphId, getInterpreterGroupId(),
         getAngularObjectListener(),
         getRemoteInterpreterProcess());
   }

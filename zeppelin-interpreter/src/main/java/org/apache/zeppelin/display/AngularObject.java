@@ -33,17 +33,19 @@ import org.slf4j.LoggerFactory;
 public class AngularObject<T> {
   private String name;
   private T object;
-  
+
   private transient AngularObjectListener listener;
   private transient List<AngularObjectWatcher> watchers
     = new LinkedList<AngularObjectWatcher>();
-  
-  private String noteId;   // noteId belonging to. null for global scope 
 
-  protected AngularObject(String name, T o, String noteId,
+  private String noteId;   // noteId belonging to. null for global scope
+  private String paragraphId; // paragraphId belongs to. null for notebook Scope
+
+  protected AngularObject(String name, T o, String noteId, String paragraphId,
       AngularObjectListener listener) {
     this.name = name;
     this.noteId = noteId;
+    this.paragraphId = paragraphId;
     this.listener = listener;
     object = o;
   }
@@ -51,15 +53,24 @@ public class AngularObject<T> {
   public String getName() {
     return name;
   }
-  
+
   public void setNoteId(String noteId) {
     this.noteId = noteId;
   }
-  
+
   public String getNoteId() {
     return noteId;
   }
-  
+
+
+  public String getParagraphId() {
+    return paragraphId;
+  }
+
+  public void setParagraphId(String paragraphId) {
+    this.paragraphId = paragraphId;
+  }
+
   public boolean isGlobal() {
     return noteId == null;
   }
@@ -70,7 +81,10 @@ public class AngularObject<T> {
       AngularObject ao = (AngularObject) o;
       if (noteId == null && ao.noteId == null ||
           (noteId != null && ao.noteId != null && noteId.equals(ao.noteId))) {
-        return name.equals(ao.name);
+        if (paragraphId == null && ao.paragraphId == null ||
+            (paragraphId != null && ao.paragraphId != null && paragraphId.equals(ao.paragraphId))) {
+          return name.equals(ao.name);
+        }
       }
     }
     return false;
@@ -85,7 +99,7 @@ public class AngularObject<T> {
       listener.updated(this);
     }
   }
-  
+
   public void set(T o) {
     set(o, true);
   }

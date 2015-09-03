@@ -18,12 +18,13 @@
 angular.module('zeppelinWebApp')
   .controller('ParagraphCtrl', function($scope,$rootScope, $route, $window, $element, $routeParams, $location,
                                          $timeout, $compile, websocketMsgSrv) {
-
   $scope.paragraph = null;
   $scope.editor = null;
 
-  var editorMode = {scala: 'ace/mode/scala', sql: 'ace/mode/sql', markdown: 'ace/mode/markdown', 
-		  sh: 'ace/mode/sh'};
+  var paragraphScope = $rootScope.notebookScope.$new(false, $rootScope.notebookScope);
+  var angularObjectRegistry = {};
+    
+  var editorMode = {scala: 'ace/mode/scala', sql: 'ace/mode/sql', markdown: 'ace/mode/markdown', sh: 'ace/mode/sh'};
 
   // Controller init
   $scope.init = function(newParagraph) {
@@ -38,7 +39,7 @@ angular.module('zeppelinWebApp')
     }
 
     initializeDefault();
-
+    
     if (!$scope.lastData) {
       $scope.lastData = {};
     }
@@ -79,7 +80,7 @@ angular.module('zeppelinWebApp')
         try {
           angular.element('#p'+$scope.paragraph.id+'_angular').html($scope.paragraph.result.msg);
 
-          $compile(angular.element('#p'+$scope.paragraph.id+'_angular').contents())($rootScope.compiledScope);
+          $compile(angular.element('#p'+$scope.paragraph.id+'_angular').contents())(paragraphScope);
         } catch(err) {
           console.log('ANGULAR rendering error %o', err);
         }
@@ -90,6 +91,61 @@ angular.module('zeppelinWebApp')
     $timeout(retryRenderer);
 
   };
+
+  $scope.$on('angularObjectUpdate', function(event, data) {
+    if (data.noteId && data.paragraphId === $scope.paragraph.id) {
+      var scope = paragraphScope;
+      var varName = data.angularObject.name;
+
+      if (angular.equals(data.angularObject.object, scope[varName])) {
+        // return when update has no change
+        return;
+      }
+
+      if (!angularObjectRegistry[varName]) {
+        angularObjectRegistry[varName] = {
+          interpreterGroupId : data.interpreterGroupId,
+          noteId : data.noteId,
+          paragraphId : data.paragraphId
+        };
+      }
+
+      angularObjectRegistry[varName].skipEmit = true;
+
+      if (!angularObjectRegistry[varName].clearWatcher) {
+        angularObjectRegistry[varName].clearWatcher = scope.$watch(varName, function(newValue, oldValue) {
+          if (angularObjectRegistry[varName].skipEmit) {
+            angularObjectRegistry[varName].skipEmit = false;
+            return;
+          }
+          websocketMsgSrv.updateAngularObject(
+            angularObjectRegistry[varName].noteId,
+            angularObjectRegistry[varName].paragraphId,            
+            varName,
+            newValue,
+            angularObjectRegistry[varName].interpreterGroupId);
+        });
+      }
+      scope[varName] = data.angularObject.object;
+    }
+  });
+    
+
+  $scope.$on('angularObjectRemove', function(event, data) {
+    if (!data.noteId || data.noteId && data.paragraphId === $scope.paragraph.id) {
+      var scope = paragraphScope;
+      var varName = data.name;
+
+      // clear watcher
+      if (angularObjectRegistry[varName]) {
+        angularObjectRegistry[varName].clearWatcher();
+        angularObjectRegistry[varName] = undefined;
+      }
+
+      // remove scope variable
+      scope[varName] = undefined;
+    }
+  });
 
 
   var initializeDefault = function() {

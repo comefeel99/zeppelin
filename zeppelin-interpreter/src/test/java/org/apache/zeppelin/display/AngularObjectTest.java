@@ -29,7 +29,8 @@ public class AngularObjectTest {
   @Test
   public void testListener() {
     final AtomicInteger updated = new AtomicInteger(0);
-    AngularObject ao = new AngularObject("name", "value", "note1", new AngularObjectListener() {
+    AngularObject ao = new AngularObject("name", "value", "note1", "paragraph1",
+        new AngularObjectListener() {
 
       @Override
       public void updated(AngularObject updatedObject) {
@@ -55,7 +56,8 @@ public class AngularObjectTest {
   public void testWatcher() throws InterruptedException {
     final AtomicInteger updated = new AtomicInteger(0);
     final AtomicInteger onWatch = new AtomicInteger(0);
-    AngularObject ao = new AngularObject("name", "value", "note1", new AngularObjectListener() {
+    AngularObject ao = new AngularObject("name", "value", "note1", "paragraph1",
+        new AngularObjectListener() {
       @Override
       public void updated(AngularObject updatedObject) {
         updated.incrementAndGet();
