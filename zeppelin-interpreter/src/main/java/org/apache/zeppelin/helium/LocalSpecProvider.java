@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 
 /**
  * Load application Specs from local filesystem
@@ -59,7 +60,9 @@ public class LocalSpecProvider {
     } else {
       try {
         FileReader reader = new FileReader(file);
-        ApplicationSpec spec = gson.fromJson(reader, ApplicationSpec.class);
+        JsonReader jsonReader = new JsonReader(reader);
+        jsonReader.setLenient(true);
+        ApplicationSpec spec = gson.fromJson(jsonReader, ApplicationSpec.class);
         list.add(spec);
       } catch (FileNotFoundException e) {
         logger.error("error", e);

@@ -49,7 +49,7 @@ public class HeliumConfTest {
     // create new conf file
     HeliumConf hc = HeliumConf.create(confFile);
     assertTrue(confFile.exists());
-    assertEquals(0, hc.enabledSpecs.size());
+    assertEquals(0, hc.enabled.size());
 
     // enable spec
     ApplicationSpec spec = new ApplicationSpec("artifact", "className", "name", "desc");
@@ -58,11 +58,11 @@ public class HeliumConfTest {
     // check spec enabled
     hc.enable(spec);
     assertTrue(spec.isEnabled());
-    assertEquals(1, hc.enabledSpecs.size());
+    assertEquals(1, hc.enabled.size());
 
     // read from conf file
     HeliumConf hc1 = HeliumConf.create(confFile);
     assertTrue(hc1.isEnabled(spec));
-    assertEquals(1, hc1.enabledSpecs.size());
+    assertEquals(1, hc1.enabled.size());
   }
 }

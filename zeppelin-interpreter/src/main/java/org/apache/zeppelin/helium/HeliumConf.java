@@ -31,7 +31,7 @@ import com.google.gson.Gson;
  * Responsible for save/load enabled ZeppelinApplication
  */
 public class HeliumConf {
-  List<ApplicationKey> enabledSpecs = new LinkedList<ApplicationKey>();
+  List<ApplicationKey> enabled = new LinkedList<ApplicationKey>();
   private transient File confFile;
 
   HeliumConf() {
@@ -72,8 +72,8 @@ public class HeliumConf {
   }
 
   public boolean isEnabled(ApplicationKey key) {
-    synchronized (enabledSpecs) {
-      return enabledSpecs.contains(key);
+    synchronized (enabled) {
+      return enabled.contains(key);
     }
   }
 
@@ -82,9 +82,9 @@ public class HeliumConf {
   }
 
   public void enable(ApplicationSpec spec) throws IOException {
-    synchronized (enabledSpecs) {
-      if (!enabledSpecs.contains(spec)) {
-        enabledSpecs.add(clone(spec));
+    synchronized (enabled) {
+      if (!enabled.contains(spec)) {
+        enabled.add(clone(spec));
       }
       save();
     }
@@ -92,8 +92,8 @@ public class HeliumConf {
   }
 
   public void disable(ApplicationSpec spec) throws IOException {
-    synchronized (enabledSpecs) {
-      enabledSpecs.remove(clone(spec));
+    synchronized (enabled) {
+      enabled.remove(clone(spec));
       save();
     }
     spec.setEnabled(false);
