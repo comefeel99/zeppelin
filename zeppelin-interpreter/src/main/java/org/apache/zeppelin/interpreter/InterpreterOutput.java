@@ -107,6 +107,33 @@ public class InterpreterOutput extends OutputStream {
     }
   }
 
+
+  /**
+   * Add resources like html, js
+   * @param resourceName
+   * @throws IOException
+   */
+  public void writeResource(String resourceName) throws IOException {
+    // search file under resource dir first for dev mode
+    File mainResource = new File("./src/main/resources/" + resourceName);
+    File testResource = new File("./src/test/resources/" + resourceName);
+    if (mainResource.isFile()) {
+      write(mainResource);
+    } else if (testResource.isFile()) {
+      write(testResource);
+    } else {
+      // search from classpath
+      ClassLoader cl = Thread.currentThread().getContextClassLoader();
+      if (cl == null) {
+        cl = this.getClass().getClassLoader();
+      }
+      if (cl == null) {
+        cl = ClassLoader.getSystemClassLoader();
+      }
+      write(cl.getResource(resourceName));
+    }
+  }
+
   public byte[] toByteArray() throws IOException {
     return toByteArray(false);
   }

@@ -17,6 +17,8 @@
 
 package org.apache.zeppelin.helium;
 
+import java.io.IOException;
+
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectWatcher;
@@ -51,9 +53,9 @@ public abstract class Application {
   /**
    * Application routine.
    * @return
-   * @throws ApplicationException
+   * @throws IOException
    */
-  protected abstract void run() throws ApplicationException;
+  protected abstract void run() throws IOException;
 
   /**
    * On change watching data
@@ -80,9 +82,9 @@ public abstract class Application {
   /**
    * Execute this application
    * @return
-   * @throws ApplicationException
+   * @throws IOException
    */
-  public void execute() throws ApplicationException {
+  public void execute() throws IOException {
     run();
   }
 
