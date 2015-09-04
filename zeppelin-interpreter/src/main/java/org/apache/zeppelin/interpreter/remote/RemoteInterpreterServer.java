@@ -50,7 +50,9 @@ import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterOutput;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.InterpreterResult.Type;
 import org.apache.zeppelin.interpreter.LazyOpenInterpreter;
+import org.apache.zeppelin.interpreter.data.TableData;
 import org.apache.zeppelin.interpreter.thrift.ApplicationResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
@@ -61,6 +63,7 @@ import org.apache.zeppelin.resource.ByteBufferInputStream;
 import org.apache.zeppelin.resource.ResourceInfo;
 import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.resource.ResourcePoolEventHandler;
+import org.apache.zeppelin.resource.WellKnownResource;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
@@ -250,6 +253,12 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       result = new InterpreterResult(Code.ERROR, Job.getStack(job.getException()));
     } else {
       result = (InterpreterResult) job.getReturn();
+    }
+
+    if (result.type() == Type.TABLE) {
+      resourcePool.put(
+        WellKnownResource.TABLE_DATA.resourceNameAt(context.getNoteId(), context.getParagraphId()),
+        new TableData(result));
     }
     return convert(result, context.getConfig(), context.getGui());
   }
