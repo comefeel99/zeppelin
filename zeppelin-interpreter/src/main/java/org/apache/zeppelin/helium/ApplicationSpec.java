@@ -22,12 +22,15 @@ package org.apache.zeppelin.helium;
 public class ApplicationSpec extends ApplicationKey {
   private String name;           // user friendly name of this application
   private String description;    // description
+  private String [] consume;     // resource pattern that this application can consume
   private transient boolean enabled;
 
-  public ApplicationSpec(String mavenArtifact, String className, String name, String description) {
+  public ApplicationSpec(String mavenArtifact, String className, String name, String description,
+      String [] consume) {
     super(mavenArtifact, className);
     this.name = name;
     this.description = description;
+    this.consume = consume;
   }
 
   public String getName() {
@@ -44,6 +47,14 @@ public class ApplicationSpec extends ApplicationKey {
 
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  /**
+   * Get resource patterns this application can consume
+   * @return
+   */
+  public String [] getConsume() {
+    return consume;
   }
 
 }
