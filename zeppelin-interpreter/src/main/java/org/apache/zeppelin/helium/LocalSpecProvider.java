@@ -57,6 +57,11 @@ public class LocalSpecProvider {
       for (File f : file.listFiles()) {
         list.addAll(loadSpecFiles(f));
       }
+    } else if (file.getName().startsWith(".") || file.getName().startsWith("~") ||
+        file.getName().startsWith("#")) {
+      return list;
+    } else if (file.getName().endsWith("jar")) {
+      return list;
     } else {
       try {
         FileReader reader = new FileReader(file);
