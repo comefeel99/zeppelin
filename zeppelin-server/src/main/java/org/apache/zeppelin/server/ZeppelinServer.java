@@ -38,6 +38,7 @@ import org.apache.zeppelin.interpreter.InterpreterFactory;
 import org.apache.zeppelin.notebook.Notebook;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.NotebookRepoSync;
+import org.apache.zeppelin.rest.HeliumRestApi;
 import org.apache.zeppelin.rest.InterpreterRestApi;
 import org.apache.zeppelin.rest.NotebookRestApi;
 import org.apache.zeppelin.rest.ZeppelinRestApi;
@@ -87,7 +88,7 @@ public class ZeppelinServer extends Application {
     conf.setProperty("args", args);
 
     HeliumConf heliumConf = HeliumConf.create(new File(conf.getHeliumConfPath()));
-    Helium helium = new Helium(heliumConf, conf.getLocalRepoDir());
+    Helium helium = new Helium(heliumConf, conf.getHeliumLocalRepo());
     Helium.setSingleton(helium);
 
     jettyServer = setupJettyServer(conf);
@@ -337,6 +338,9 @@ public class ZeppelinServer extends Application {
 
     InterpreterRestApi interpreterApi = new InterpreterRestApi(replFactory);
     singletons.add(interpreterApi);
+
+    HeliumRestApi heliumApi = new HeliumRestApi();
+    singletons.add(heliumApi);
 
     return singletons;
   }
