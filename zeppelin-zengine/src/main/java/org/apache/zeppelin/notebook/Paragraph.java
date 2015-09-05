@@ -23,6 +23,7 @@ import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.Interpreter.FormType;
+import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.JobListener;
@@ -207,21 +208,20 @@ public class Paragraph extends Job implements Serializable, Cloneable {
       script = Input.getSimpleQuery(settings.getParams(), scriptBody);
     }
     logger().info("RUN : " + script);
-    InterpreterResult ret = repl.interpret(script, getInterpreterContext());
+    InterpreterContext context = getInterpreterContext();
+    InterpreterResult ret = repl.interpret(script, context);
 
     // add InterpreterOutput a head of the message
     String message = null;
 
-    byte[] interpreterOutput = getInterpreterContext().out.toByteArray(true);
-
+    byte[] interpreterOutput = context.out.toByteArray(true);
     if (interpreterOutput != null && interpreterOutput.length > 0) {
       // something printed in InterpreterOutput
       message = new String(interpreterOutput);
 
       if (ret.message() != null) {
-        message += ret.toString();
+        message += ret.message();
       }
-
       return new InterpreterResult(ret.code(), message);
     } else {
       // remote interpreter or InterpreterOutput is empty

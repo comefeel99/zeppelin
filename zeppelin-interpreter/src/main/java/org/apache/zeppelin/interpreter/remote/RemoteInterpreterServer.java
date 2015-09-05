@@ -106,6 +106,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     interpreterGroup.setAngularObjectRegistry(angularObjectRegistry);
 
     appLoader = createAppLoader(localRepo);
+    interpreterGroup.setAppLoader(appLoader);
 
     processor = new RemoteInterpreterService.Processor<RemoteInterpreterServer>(this);
     TServerSocket serverTransport = new TServerSocket(port);
@@ -213,6 +214,10 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     }
     throw new TException(new InterpreterException("Interpreter instance " + className
         + " not found"));
+  }
+
+  public InterpreterGroup getInterpreterGroup() {
+    return interpreterGroup;
   }
 
   @Override
@@ -588,6 +593,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       throws TException {
     ResourceKey r = null;
 
+    logger.info("Search result for location {}, name {} received", location, namePattern);
     synchronized (resourcePoolsearchEventQueue) {
       ResourceKey key = new ResourceKey(location, namePattern);
       int i = resourcePoolsearchEventQueue.indexOf(key);
@@ -755,6 +761,13 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     return resourcePool.getId();
   }
 
+  public ResourcePool getResourcePool() {
+    return resourcePool;
+  }
+
+  /**
+   * ZeppelinServer -> Interpreter
+   */
   @Override
   public ApplicationResult loadApplication(String artifact, String classname,
       String noteId, String paragraphId,
@@ -764,7 +777,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
     String resourceName = WellKnownResource.resourceName(
         WellKnownResource.APPLICATION,
-        paragraphId,                     // paragraphId as instanceId
+        classname,
         noteId,
         paragraphId);
 
@@ -796,13 +809,16 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     }
   }
 
+  /**
+   * ZeppelinServer -> Interpreter
+   */
   @Override
   public int unloadApplication(String artifact, String classname,
       String noteId, String paragraphId) throws TException {
 
     String resourceName = WellKnownResource.resourceName(
         WellKnownResource.APPLICATION,
-        paragraphId,                     // paragraphId as instanceId
+        classname,
         noteId,
         paragraphId);
 
@@ -817,6 +833,4 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     }
     return 0;
   }
-
-
 }

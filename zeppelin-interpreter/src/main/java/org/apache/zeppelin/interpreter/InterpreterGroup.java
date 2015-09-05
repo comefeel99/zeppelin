@@ -47,6 +47,10 @@ public class InterpreterGroup extends LinkedList<Interpreter>{
 
   public InterpreterGroup(String id) {
     this.id = id;
+
+    synchronized (allInterpreterGroups) {
+      allInterpreterGroups.put(id, this);
+    }
   }
 
   public InterpreterGroup() {

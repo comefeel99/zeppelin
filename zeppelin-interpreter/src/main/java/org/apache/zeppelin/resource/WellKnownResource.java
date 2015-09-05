@@ -51,4 +51,8 @@ public enum WellKnownResource {
     return type + "#" + instanceId + "@" + noteId + ":" + praragraphId;
   }
 
+  public static String resourceNameBelongsTo(
+      String noteId, String praragraphId) {
+    return "[^@]*[@]" + noteId + ":" + praragraphId;
+  }
 }

@@ -16,94 +16,55 @@
  */
 package org.apache.zeppelin.interpreter.dev;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Properties;
+import java.lang.reflect.InvocationTargetException;
 
-import org.apache.thrift.TException;
-import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
-import org.apache.zeppelin.interpreter.Interpreter;
+import org.apache.zeppelin.helium.Application;
+import org.apache.zeppelin.helium.ApplicationArgument;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
-import org.apache.zeppelin.interpreter.InterpreterOutput;
-import org.apache.zeppelin.interpreter.InterpreterOutputChangeListener;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
-import org.apache.zeppelin.interpreter.dev.DevInterpreter.InterpreterEvent;
-import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer;
 
 /**
- *
+ * Run this server for development mode.
  */
-public abstract class ZeppelinApplicationDevServer extends
-    RemoteInterpreterServer implements InterpreterEvent, InterpreterOutputChangeListener {
-  public static final int DEFAULT_TEST_INTERPRETER_PORT = 29914;
+public class ZeppelinApplicationDevServer {
 
-  DevInterpreter interpreter = null;
-  InterpreterOutput out = null;
+  public ZeppelinDevServer server;
 
-  public ZeppelinApplicationDevServer(int port, String localRepo) throws TException {
-    super(port, localRepo);
-  }
+  public ZeppelinApplicationDevServer(final String className, final ApplicationArgument arg)
+      throws Exception {
+    int port = ZeppelinDevServer.DEFAULT_TEST_INTERPRETER_PORT;
+    String localRepoDir = System.getProperty("java.io.tmpdir") + "/localrepo";
 
-  @Override
-  protected Interpreter getInterpreter(String className) throws TException {
-    synchronized (this) {
-      if (interpreter == null) {
-        Properties p = new Properties();
-        interpreter = new DevInterpreter(p, this);
-      }
-      notify();
-    }
-    return new ClassloaderInterpreter(interpreter, this.getClass().getClassLoader());
-  }
+    server = new ZeppelinDevServer(port, localRepoDir,
+        new DevInterpreter.InterpreterEvent() {
 
-  @Override
-  protected InterpreterOutput createInterpreterOutput() {
-    if (out == null) {
-      try {
-        out =  new InterpreterOutput(this);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
+      Application app = null;
 
-    return out;
-  }
-
-  @Override
-  public void fileChanged(File file) {
-    refresh();
-  }
-
-  @Override
-  public boolean clearInterpreterOutput() {
-    return false;
-  }
-
-  @Override
-  public abstract InterpreterResult interpret(String st, InterpreterContext context);
-
-  public void refresh() {
-    interpreter.rerun();
-  }
-
-  /**
-   * Wait until %dev paragraph is executed and connected to this process
-   */
-  public void waitForConnected() {
-    synchronized (this) {
-      while (!isConnected()) {
-        try {
-          this.wait(10 * 1000);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
+      @Override
+      public InterpreterResult interpret(String st, InterpreterContext context) {
+        if (app == null) {
+          try {
+            app = (Application) ClassLoader.getSystemClassLoader().loadClass(className)
+              .getConstructor(InterpreterContext.class).newInstance(context);
+            app.load();
+          } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+              | InvocationTargetException | NoSuchMethodException | SecurityException
+              | ClassNotFoundException | IOException e) {
+            throw new InterpreterException(e);
+          }
         }
+        try {
+          app.run(arg);
+        } catch (IOException e) {
+          throw new InterpreterException(e);
+        }
+        return new InterpreterResult(Code.SUCCESS, "");
       }
-    }
+
+    });
   }
 
-  public boolean isConnected() {
-    return !(interpreter == null || interpreter.getLastInterpretContext() == null);
-  }
 }

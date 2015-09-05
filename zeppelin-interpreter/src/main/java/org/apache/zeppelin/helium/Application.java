@@ -69,14 +69,14 @@ public abstract class Application {
    * @return
    * @throws IOException
    */
-  public abstract void load() throws IOException;
+  public abstract void load() throws ApplicationException, IOException;
 
   /**
    * Load this application
    * @return
    * @throws IOException
    */
-  public abstract void run(ApplicationArgument arg) throws IOException;
+  public abstract void run(ApplicationArgument arg) throws ApplicationException, IOException;
 
 
   /**
@@ -84,7 +84,7 @@ public abstract class Application {
    * @return
    * @throws IOException
    */
-  public abstract void unload() throws IOException;
+  public abstract void unload() throws ApplicationException, IOException;
 
 
 

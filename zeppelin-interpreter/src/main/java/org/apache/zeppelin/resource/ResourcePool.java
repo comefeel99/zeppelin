@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import org.apache.thrift.TException;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
@@ -156,10 +157,12 @@ public class ResourcePool {
       for (InterpreterGroup intpGroup : InterpreterGroup.allInterpreterGroups.values()) {
         // local interpreter pool search
         ResourcePool pool = intpGroup.getResourcePool();
+
         if (pool != null) {
           if (ResourcePool.LOCATION_ANY.equals(location) || location.equals(pool.getId())) {
             searchedInfo.addAll(pool.search(namePattern));
           }
+          continue;
         } else {
           String poolId = intpGroup.getResourcePoolId();
           if (poolId != null &&
@@ -172,17 +175,22 @@ public class ResourcePool {
       }
     }
 
-    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
-    // connectionPool. that can be future improvements
+
     for (InterpreterGroup intpGroup : interpreterGroupToCheck) {
       // remote interpreter's pool
       if (intpGroup.size() == 0) {
         continue;
       }
-
       Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                      // in the same group uses
-                                                     // the same resource pool.
+
+      if (anyInterpreter == null) {
+        continue;
+      }
+
+      while (anyInterpreter instanceof WrappedInterpreter){
+        anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
+      }
 
       if (!(anyInterpreter instanceof RemoteInterpreter)) {
         continue;
@@ -255,8 +263,7 @@ public class ResourcePool {
       }
     }
 
-    // if there're connectionFactory-resourcePoolId mapping, we don't need iterate all
-    // connectionPool. that can be future improvements
+
     for (InterpreterGroup intpGroup : interpreterGroupToCheck) {
       // remote interpreter's pool
       if (intpGroup.size() == 0) {
@@ -265,6 +272,14 @@ public class ResourcePool {
       Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                      // in the same group uses
                                                      // the same resource pool.
+
+      if (anyInterpreter == null) {
+        continue;
+      }
+
+      while (anyInterpreter instanceof WrappedInterpreter){
+        anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
+      }
 
       if (!(anyInterpreter instanceof RemoteInterpreter)) {
         continue;

@@ -26,9 +26,11 @@ import org.apache.thrift.TException;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
 import org.apache.zeppelin.interpreter.thrift.ApplicationResult;
+import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
 import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.resource.WellKnownResource;
@@ -96,7 +98,7 @@ public class Helium {
     return possibleSpecs;
   }
 
-  private boolean canConsume(ApplicationSpec spec, String resourceId) {
+  public boolean canConsume(ApplicationSpec spec, String resourceId) {
     String[] consumes = spec.getConsume();
     if (consumes == null) {
       return false;
@@ -128,6 +130,14 @@ public class Helium {
         Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                        // in the same group uses
                                                        // the same resource pool.
+
+        if (anyInterpreter == null) {
+          continue;
+        }
+
+        while (anyInterpreter instanceof WrappedInterpreter){
+          anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
+        }
 
         if (!(anyInterpreter instanceof RemoteInterpreter)) {
           continue;
@@ -170,6 +180,14 @@ public class Helium {
         Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                        // in the same group uses
                                                        // the same resource pool.
+
+        if (anyInterpreter == null) {
+          continue;
+        }
+
+        while (anyInterpreter instanceof WrappedInterpreter){
+          anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
+        }
 
         if (!(anyInterpreter instanceof RemoteInterpreter)) {
           continue;
@@ -225,7 +243,6 @@ public class Helium {
       throws ApplicationException {
     for (InterpreterGroup intpGroup : getAllInterpreterGroups()) {
       String poolId = intpGroup.getResourcePoolId();
-
       // If resourcePoolId is not set, ask interpreter process and set
       if (poolId == null) {
         // remote interpreter's pool
@@ -236,8 +253,12 @@ public class Helium {
                                                        // in the same group uses
                                                        // the same resource pool.
 
-        if (!(anyInterpreter instanceof RemoteInterpreter)) {
+        if (anyInterpreter == null) {
           continue;
+        }
+
+        while (anyInterpreter instanceof WrappedInterpreter){
+          anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
         }
 
         RemoteInterpreter r = (RemoteInterpreter) anyInterpreter;
@@ -248,12 +269,16 @@ public class Helium {
         if (poolId != null) {
           intpGroup.setResourcePoolId(poolId);
         }
+
       }
+
 
       if (poolId == null || !poolId.equals(location)) {
         continue;
       }
+
       if (intpGroup.getResourcePool() != null) {   // local interpreter process
+        System.err.println("Here4");
         String appResourceName = WellKnownResource.resourceName(
             WellKnownResource.APPLICATION,
             paragraphId,
@@ -271,6 +296,7 @@ public class Helium {
               noteId,
               paragraphId), application);
           try {
+            logger.info("Load application {} at {}", key.getClassName(), pool.getId());
             application.load();
             app = application;
           } catch (IOException e) {
@@ -280,6 +306,7 @@ public class Helium {
 
         if (app != null) {
           try {
+            logger.info("Run application {} at {}", key.getClassName(), pool.getId());
             ((Application) app).run(arg);
           } catch (IOException e) {
             throw new ApplicationException(e);
@@ -287,6 +314,7 @@ public class Helium {
         }
         return;
       } else {
+        System.err.println("Here5");
         // remote interpreter's pool
         if (intpGroup.size() == 0) {
           continue;
@@ -294,6 +322,14 @@ public class Helium {
         Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                        // in the same group uses
                                                        // the same resource pool.
+
+        if (anyInterpreter == null) {
+          continue;
+        }
+
+        while (anyInterpreter instanceof WrappedInterpreter){
+          anyInterpreter = ((WrappedInterpreter) anyInterpreter).getInnerInterpreter();
+        }
 
         if (!(anyInterpreter instanceof RemoteInterpreter)) {
           continue;
@@ -315,6 +351,7 @@ public class Helium {
 
         ApplicationResult ret = null;
         try {
+          logger.info("Load application {} at {} {}", key.getClassName(), noteId, paragraphId);
           ret = c.loadApplication(
               key.getMavenArtifact(),
               key.getClassName(),

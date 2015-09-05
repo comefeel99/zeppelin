@@ -30,9 +30,14 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.thrift.TException;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
+import org.apache.zeppelin.display.GUI;
+import org.apache.zeppelin.helium.Helium;
+import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.ParagraphRunner;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.ResourceKey;
+import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEventType;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
@@ -173,6 +178,18 @@ public class RemoteInterpreterEventPoller extends Thread {
       } catch (Exception e) {
         logger.error("Can't handle event " + event, e);
       }
+    }
+  }
+
+
+  static class PassRunner extends InterpreterContextRunner {
+
+    public PassRunner(String noteId, String paragraphId) {
+      super(noteId, paragraphId);
+    }
+
+    @Override
+    public void run() {
     }
   }
 

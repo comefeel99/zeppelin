@@ -20,13 +20,16 @@ package org.apache.zeppelin.notebook;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
+import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.Interpreter.RegisteredInterpreter;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterFactory;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
+import org.apache.zeppelin.interpreter.helium.HeliumInterpreter;
 
 /**
  * Repl loader per note.
@@ -145,6 +148,11 @@ public class NoteInterpreterLoader {
       }
     }
 
+    // helium
+    if (HeliumInterpreter.isInterpreterName(replName)) {
+      Properties p = new Properties();
+      return new HeliumInterpreter(p);
+    }
     throw new InterpreterException(replName + " interpreter not found");
   }
 }
