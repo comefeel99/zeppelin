@@ -81,21 +81,8 @@ public abstract class ZeppelinApplicationDevServer extends
     return false;
   }
 
-  /**
-   * execute application. This will be called when you run %dev paragraph in Zeppelin
-   * @throws Exception
-   */
-  protected abstract void onInterpret(InterpreterContext context) throws Exception;
-
   @Override
-  public InterpreterResult interpret(String st, InterpreterContext context) {
-    try {
-      onInterpret(context);
-    } catch (Exception e) {
-      throw new InterpreterException(e);
-    }
-    return new InterpreterResult(Code.SUCCESS, "");
-  }
+  public abstract InterpreterResult interpret(String st, InterpreterContext context);
 
   public void refresh() {
     interpreter.rerun();

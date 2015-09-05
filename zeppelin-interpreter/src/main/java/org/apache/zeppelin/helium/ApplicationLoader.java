@@ -73,16 +73,16 @@ public class ApplicationLoader {
     return cls;
   }
 
-  public void run(ApplicationKey spec, InterpreterContext context)
+  public Application load(ApplicationKey spec, InterpreterContext context)
       throws ApplicationException {
     try {
-      run(load(spec), context);
+      return run(load(spec), context);
     } catch (Exception e) {
       throw new ApplicationException(e);
     }
   }
 
-  private void run(Class<Application> appClass, InterpreterContext context)
+  private Application run(Class<Application> appClass, InterpreterContext context)
       throws ApplicationException {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(appClass.getClassLoader());
@@ -92,7 +92,7 @@ public class ApplicationLoader {
           appClass.getConstructor(InterpreterContext.class);
 
       Application app = constructor.newInstance(context);
-      app.execute();
+      return app;
     } catch (Exception e) {
       throw new ApplicationException(e);
     } finally {

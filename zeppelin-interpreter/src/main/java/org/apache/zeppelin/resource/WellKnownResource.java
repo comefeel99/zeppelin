@@ -20,24 +20,35 @@ package org.apache.zeppelin.resource;
  * Well known resource names (patterns)
  */
 public enum WellKnownResource {
-  TABLE_DATA("org.apache.zeppelin.interpreter.data.TableData"),
+  APPLICATION("zeppelin.app.Application"),
+  TABLE_DATA("zeppelin.data.TableData"),
   /*
    * Spark interpreter provided resource
    */
-  SPARK_CONTEXT("org.apache.spark.SparkContext"),
-  SPARK_SQLCONTEXT("org.apache.spark.sql.SQLContext");
+  SPARK_CONTEXT("spark.SparkContext"),
+  SPARK_SQLCONTEXT("spark.SQLContext");
 
 
-  String name;
-  WellKnownResource(String name) {
-    this.name = name;
+  String type;
+  WellKnownResource(String type) {
+    this.type = type;
   }
 
-  public String resourceName() {
-    return name;
+  public String type() {
+    return type;
   }
 
-  public String resourceNameAt(String noteId, String paragraphId) {
-    return name + "@" + noteId + ":" + paragraphId;
+  public static String resourceName(
+      WellKnownResource res, String instanceId, String noteId, String praragraphId) {
+    return resourceName(res.type(), instanceId, noteId, praragraphId);
   }
+
+  public static final String INSTANCE_ALL = "[^@]*";
+  public static final String INSTANCE_RESULT = "result";
+
+  public static String resourceName(
+      String type, String instanceId, String noteId, String praragraphId) {
+    return type + "#" + instanceId + "@" + noteId + ":" + praragraphId;
+  }
+
 }

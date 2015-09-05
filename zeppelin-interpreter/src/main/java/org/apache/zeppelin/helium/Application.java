@@ -18,6 +18,7 @@
 package org.apache.zeppelin.helium;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
@@ -51,13 +52,6 @@ public abstract class Application {
   }
 
   /**
-   * Application routine.
-   * @return
-   * @throws IOException
-   */
-  protected abstract void run() throws IOException;
-
-  /**
    * On change watching data
    * @param name
    * @param oldObject
@@ -70,6 +64,29 @@ public abstract class Application {
    */
   public abstract void signal(Signal signal);
 
+  /**
+   * Load this application
+   * @return
+   * @throws IOException
+   */
+  public abstract void load() throws IOException;
+
+  /**
+   * Load this application
+   * @return
+   * @throws IOException
+   */
+  public abstract void run(ApplicationArgument arg) throws IOException;
+
+
+  /**
+   * Unload this application
+   * @return
+   * @throws IOException
+   */
+  public abstract void unload() throws IOException;
+
+
 
   /**
    * Get interpreter context that this application is running
@@ -79,15 +96,9 @@ public abstract class Application {
     return context;
   }
 
-  /**
-   * Execute this application
-   * @return
-   * @throws IOException
-   */
-  public void execute() throws IOException {
-    run();
+  protected Object getResourceFromPool(String resourceId) {
+    return context.getResourcePool().get(resourceId);
   }
-
 
   /**
    * Bind object to angular scope

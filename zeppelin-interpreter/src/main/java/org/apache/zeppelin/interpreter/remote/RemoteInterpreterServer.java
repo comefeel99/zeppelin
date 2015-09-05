@@ -39,6 +39,8 @@ import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
+import org.apache.zeppelin.helium.Application;
+import org.apache.zeppelin.helium.ApplicationArgument;
 import org.apache.zeppelin.helium.ApplicationKey;
 import org.apache.zeppelin.helium.ApplicationLoader;
 import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
@@ -257,8 +259,11 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
     if (result.type() == Type.TABLE) {
       resourcePool.put(
-        WellKnownResource.TABLE_DATA.resourceNameAt(context.getNoteId(), context.getParagraphId()),
-        new TableData(result));
+          WellKnownResource.resourceName(
+              WellKnownResource.TABLE_DATA,
+              WellKnownResource.INSTANCE_RESULT,
+              context.getNoteId(), context.getParagraphId()),
+          new TableData(result));
     }
     return convert(result, context.getConfig(), context.getGui());
   }
@@ -751,20 +756,67 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   }
 
   @Override
-  public ApplicationResult runApplication(String artifact, String classname,
+  public ApplicationResult loadApplication(String artifact, String classname,
+      String noteId, String paragraphId,
+      String inputResource,
       RemoteInterpreterContext interpreterContext) throws TException {
     InterpreterContext context = convert(interpreterContext);
-    try {
-      appLoader.run(new ApplicationKey(artifact, classname), context);
-    } catch (Exception e) {
-      logger.error("ApplicationError", e);
-      e.printStackTrace(new PrintWriter(context.out));
+
+    String resourceName = WellKnownResource.resourceName(
+        WellKnownResource.APPLICATION,
+        paragraphId,                     // paragraphId as instanceId
+        noteId,
+        paragraphId);
+
+    Object app = resourcePool.get(resourceName);
+    if (app == null) {
+      try {
+        Application application = appLoader.load(new ApplicationKey(artifact, classname), context);
+        resourcePool.put(resourceName, application);
+        application.load();
+        app = application;
+      } catch (Exception e) {
+        logger.error("Error on load application " + classname, e);
+        e.printStackTrace(new PrintWriter(context.out));
+      }
+      try {
+        return new ApplicationResult(0, new String(context.out.toByteArray(true)));
+      } catch (IOException e) {
+        logger.error("error", e);
+        return new ApplicationResult(1, e.getMessage());
+      }
     }
+
     try {
-      return new ApplicationResult(0, new String(context.out.toByteArray(true)));
+      ((Application) app).run(new ApplicationArgument(inputResource));
+      return new ApplicationResult(0, new String(context.out.toByteArray()));
     } catch (IOException e) {
-      logger.error("error", e);
+      logger.error("Error on run application " + classname, e);
       return new ApplicationResult(1, e.getMessage());
     }
   }
+
+  @Override
+  public int unloadApplication(String artifact, String classname,
+      String noteId, String paragraphId) throws TException {
+
+    String resourceName = WellKnownResource.resourceName(
+        WellKnownResource.APPLICATION,
+        paragraphId,                     // paragraphId as instanceId
+        noteId,
+        paragraphId);
+
+    Object app = resourcePool.get(resourceName);
+    if (app != null) {
+      try {
+        ((Application) app).unload();
+      } catch (IOException e) {
+        logger.error("Error on unload application " + classname, e);
+        return 1;
+      }
+    }
+    return 0;
+  }
+
+
 }
