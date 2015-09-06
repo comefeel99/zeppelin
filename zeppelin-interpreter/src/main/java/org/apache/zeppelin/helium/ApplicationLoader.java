@@ -66,7 +66,8 @@ public class ApplicationLoader {
         }
       }
     }
-    URLClassLoader applicationClassLoader = new URLClassLoader(urlList.toArray(new URL[]{}), parentClassLoader);
+    URLClassLoader applicationClassLoader =
+        new URLClassLoader(urlList.toArray(new URL[]{}), parentClassLoader);
 
     Class<Application> cls =
         (Class<Application>) applicationClassLoader.loadClass(spec.getClassName());

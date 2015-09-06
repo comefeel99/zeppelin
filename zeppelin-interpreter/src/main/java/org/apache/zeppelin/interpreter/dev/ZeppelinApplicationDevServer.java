@@ -41,30 +41,29 @@ public class ZeppelinApplicationDevServer {
     server = new ZeppelinDevServer(port, localDepRepoDir,
         new DevInterpreter.InterpreterEvent() {
 
-      Application app = null;
+        Application app = null;
 
-      @Override
-      public InterpreterResult interpret(String st, InterpreterContext context) {
-        if (app == null) {
+        @Override
+        public InterpreterResult interpret(String st, InterpreterContext context) {
+          if (app == null) {
+            try {
+              app = (Application) ClassLoader.getSystemClassLoader().loadClass(className)
+                .getConstructor(InterpreterContext.class).newInstance(context);
+              app.load();
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException | NoSuchMethodException | SecurityException
+                | ClassNotFoundException | IOException e) {
+              throw new InterpreterException(e);
+            }
+          }
           try {
-            app = (Application) ClassLoader.getSystemClassLoader().loadClass(className)
-              .getConstructor(InterpreterContext.class).newInstance(context);
-            app.load();
-          } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-              | InvocationTargetException | NoSuchMethodException | SecurityException
-              | ClassNotFoundException | IOException e) {
+            app.run(arg);
+          } catch (IOException e) {
             throw new InterpreterException(e);
           }
+          return new InterpreterResult(Code.SUCCESS, "");
         }
-        try {
-          app.run(arg);
-        } catch (IOException e) {
-          throw new InterpreterException(e);
-        }
-        return new InterpreterResult(Code.SUCCESS, "");
-      }
-
-    });
+      });
   }
 
 }
