@@ -54,7 +54,6 @@ public class InterpreterOutput extends OutputStream {
     }
   }
 
-
   @Override
   public void write(int b) throws IOException {
     synchronized (outList) {
@@ -107,12 +106,6 @@ public class InterpreterOutput extends OutputStream {
     }
   }
 
-
-  /**
-   * Add resources like html, js
-   * @param resourceName
-   * @throws IOException
-   */
   public void writeResource(String resourceName) throws IOException {
     // search file under resource dir first for dev mode
     File mainResource = new File("./src/main/resources/" + resourceName);
@@ -130,6 +123,7 @@ public class InterpreterOutput extends OutputStream {
       if (cl == null) {
         cl = ClassLoader.getSystemClassLoader();
       }
+
       write(cl.getResource(resourceName));
     }
   }
@@ -190,5 +184,4 @@ public class InterpreterOutput extends OutputStream {
       watcher.shutdown();
     }
   }
-
 }

@@ -28,11 +28,14 @@ import java.util.Map;
 
 import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Download necessary jars from maven repository and create application instance
  */
 public class ApplicationLoader {
+  Logger logger = LoggerFactory.getLogger(ApplicationLoader.class);
   private final ClassLoader parentClassLoader;
   private final DependencyResolver resolver;
   private final Map<ApplicationKey, Class<Application>> cached;
@@ -50,27 +53,27 @@ public class ApplicationLoader {
     }
 
     // Create Application classloader
-    URL [] urls = new URL[0];
+    List<URL> urlList = new LinkedList<URL>();
 
     // load artifact
     if (spec.getMavenArtifact() != null) {
-      List<String> paths = resolver.load(spec.getMavenArtifact());
+      List<File> paths = resolver.load(spec.getMavenArtifact());
 
       if (paths != null) {
-        List<URL> urlList = new LinkedList<URL>();
-        for (String path : paths) {
-          urlList.add(new File(path).toURI().toURL());
+
+        for (File path : paths) {
+          urlList.add(path.toURI().toURL());
         }
       }
     }
+    URLClassLoader applicationClassLoader = new URLClassLoader(urlList.toArray(new URL[]{}), parentClassLoader);
 
-    URLClassLoader applicationClassLoader = new URLClassLoader(urls, parentClassLoader);
-
-    Class<Application> cls = (Class<Application>)
-        Class.forName(spec.getClassName(), true, applicationClassLoader);
-
+    Class<Application> cls =
+        (Class<Application>) applicationClassLoader.loadClass(spec.getClassName());
     cached.put(spec, cls);
     return cls;
+    //Class<Application> cls = (Class<Application>)
+//        Class.forName(spec.getClassName(), true, applicationClassLoader);
   }
 
   public Application load(ApplicationKey spec, InterpreterContext context)

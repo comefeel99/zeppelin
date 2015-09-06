@@ -63,6 +63,7 @@ import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterResult;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService;
 import org.apache.zeppelin.resource.ByteBufferInputStream;
 import org.apache.zeppelin.resource.ResourceInfo;
+import org.apache.zeppelin.resource.ResourceKey;
 import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.resource.ResourcePoolEventHandler;
 import org.apache.zeppelin.resource.WellKnownResource;
@@ -585,17 +586,17 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
   // Resource pool -----
 
-  List<ResourceKey> resourcePoolsearchEventQueue = new LinkedList<ResourceKey>();
-  List<ResourceKey> resourcePoolgetEventQueue = new LinkedList<ResourceKey>();
+  List<ResourceCall> resourcePoolsearchEventQueue = new LinkedList<ResourceCall>();
+  List<ResourceCall> resourcePoolgetEventQueue = new LinkedList<ResourceCall>();
 
   @Override
   public void resourcePoolInfo(String location, String namePattern, String object)
       throws TException {
-    ResourceKey r = null;
+    ResourceCall r = null;
 
     logger.info("Search result for location {}, name {} received", location, namePattern);
     synchronized (resourcePoolsearchEventQueue) {
-      ResourceKey key = new ResourceKey(location, namePattern);
+      ResourceCall key = new ResourceCall(location, namePattern);
       int i = resourcePoolsearchEventQueue.indexOf(key);
       if (i < 0) {
         // not found. ignore event
@@ -618,10 +619,10 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   @Override
   public void resourcePoolObject(String location, String name, ByteBuffer byteBuffer)
       throws TException {
-    ResourceKey r = null;
+    ResourceCall r = null;
 
     synchronized (resourcePoolgetEventQueue) {
-      ResourceKey key = new ResourceKey(location, name);
+      ResourceCall key = new ResourceCall(location, name);
       int i = resourcePoolgetEventQueue.indexOf(key);
       if (i < 0) {
         // not found. ignore event
@@ -667,6 +668,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   @Override
   public ByteBuffer resourcePoolGet(String name) throws TException {
     Object o = resourcePool.get(resourcePool.getId(), name);
+
     try {
       return ResourcePool.serializeResource(o);
     } catch (IOException e) {
@@ -677,7 +679,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
   @Override
   public Collection<ResourceInfo> resourcePoolSearch(String location, String namePattern) {
-    ResourceKey r = new ResourceKey(location, namePattern);
+    ResourceCall r = new ResourceCall(location, namePattern);
     RemoteInterpreterEvent event = new RemoteInterpreterEvent(
         RemoteInterpreterEventType.RESOURCE_POOL_SEARCH, gson.toJson(r));
 
@@ -708,7 +710,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
   @Override
   public Object resourcePoolGetObject(String location, String name) {
-    ResourceKey r = new ResourceKey(location, name);
+    ResourceCall r = new ResourceCall(location, name);
     RemoteInterpreterEvent event = new RemoteInterpreterEvent(
         RemoteInterpreterEventType.RESOURCE_POOL_GET, gson.toJson(r));
 
@@ -730,31 +732,16 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     return r.object;
   }
 
-  static class ResourceKey {
-    public final String location;
-    public final String name;
+  static class ResourceCall extends ResourceKey {
     public Object object = null;
     public boolean notified;
 
-    public ResourceKey(String location, String name) {
-      this.location = location;
-      this.name = name;
+    public ResourceCall(String location, String name) {
+      super(location, name);
       notified = false;
     }
-
-    public int hashCode() {
-      return ("location:" + location + " name:" + name).hashCode();
-    }
-
-    public boolean equals(Object o) {
-      if (o instanceof ResourceKey) {
-        ResourceKey r = (ResourceKey) o;
-        return r.location.equals(location) && r.name.equals(name);
-      } else {
-        return false;
-      }
-    }
   }
+
 
   @Override
   public String getResourcePoolId() throws TException {
@@ -771,7 +758,8 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   @Override
   public ApplicationResult loadApplication(String artifact, String classname,
       String noteId, String paragraphId,
-      String inputResource,
+      String inputResourceLocation,
+      String inputResourceName,
       RemoteInterpreterContext interpreterContext) throws TException {
     InterpreterContext context = convert(interpreterContext);
 
@@ -783,14 +771,18 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
     Object app = resourcePool.get(resourceName);
     if (app == null) {
+      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
       try {
         Application application = appLoader.load(new ApplicationKey(artifact, classname), context);
         resourcePool.put(resourceName, application);
+        Thread.currentThread().setContextClassLoader(application.getClass().getClassLoader());
         application.load();
         app = application;
       } catch (Exception e) {
         logger.error("Error on load application " + classname, e);
         e.printStackTrace(new PrintWriter(context.out));
+      } finally {
+        Thread.currentThread().setContextClassLoader(oldCl);
       }
       try {
         return new ApplicationResult(0, new String(context.out.toByteArray(true)));
@@ -800,12 +792,17 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       }
     }
 
+    ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
     try {
-      ((Application) app).run(new ApplicationArgument(inputResource));
+      Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
+      ((Application) app).run(new ApplicationArgument(
+          new ResourceKey(inputResourceLocation, inputResourceName)));
       return new ApplicationResult(0, new String(context.out.toByteArray()));
     } catch (IOException e) {
       logger.error("Error on run application " + classname, e);
       return new ApplicationResult(1, e.getMessage());
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldCl);
     }
   }
 
@@ -824,11 +821,15 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
 
     Object app = resourcePool.get(resourceName);
     if (app != null) {
+      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
       try {
+        Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
         ((Application) app).unload();
       } catch (IOException e) {
         logger.error("Error on unload application " + classname, e);
         return 1;
+      } finally {
+        Thread.currentThread().setContextClassLoader(oldCl);
       }
     }
     return 0;

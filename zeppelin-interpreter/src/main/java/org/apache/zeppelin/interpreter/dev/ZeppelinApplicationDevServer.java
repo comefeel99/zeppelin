@@ -36,9 +36,9 @@ public class ZeppelinApplicationDevServer {
   public ZeppelinApplicationDevServer(final String className, final ApplicationArgument arg)
       throws Exception {
     int port = ZeppelinDevServer.DEFAULT_TEST_INTERPRETER_PORT;
-    String localRepoDir = System.getProperty("java.io.tmpdir") + "/localrepo";
+    String localDepRepoDir = System.getProperty("java.io.tmpdir") + "/localrepo";
 
-    server = new ZeppelinDevServer(port, localRepoDir,
+    server = new ZeppelinDevServer(port, localDepRepoDir,
         new DevInterpreter.InterpreterEvent() {
 
       Application app = null;

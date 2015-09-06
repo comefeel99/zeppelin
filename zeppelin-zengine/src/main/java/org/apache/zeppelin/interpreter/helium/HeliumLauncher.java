@@ -35,6 +35,7 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.dev.ZeppelinApplicationDevServer;
 import org.apache.zeppelin.resource.ResourceInfo;
+import org.apache.zeppelin.resource.ResourceKey;
 import org.apache.zeppelin.resource.ResourcePool;
 import org.apache.zeppelin.resource.WellKnownResource;
 import org.slf4j.Logger;
@@ -91,7 +92,7 @@ public class HeliumLauncher extends Application {
                     location,
                     context.getNoteId(),
                     getPreviousParagraphId(),
-                    new ApplicationArgument(resource.name()),
+                    new ApplicationArgument(new ResourceKey(resource.location(), resource.name())),
                     context);
               } catch (ApplicationException e) {
                 logger.error("Error on loading " + spec.getName(), e);

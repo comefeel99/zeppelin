@@ -24,6 +24,7 @@ import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectWatcher;
 import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.resource.ResourceKey;
 
 /**
  * Base class for ZeppelinApplication
@@ -96,8 +97,8 @@ public abstract class Application {
     return context;
   }
 
-  protected Object getResourceFromPool(String resourceId) {
-    return context.getResourcePool().get(resourceId);
+  protected Object getResourceFromPool(ResourceKey resource) {
+    return context.getResourcePool().get(resource.location(), resource.name());
   }
 
   /**

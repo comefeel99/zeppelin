@@ -165,10 +165,14 @@ public class Helium {
             paragraphId));
 
         if (app != null) {
+          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
           try {
+            Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
             ((Application) app).unload();
           } catch (IOException e) {
             throw new ApplicationException(e);
+          } finally {
+            Thread.currentThread().setContextClassLoader(oldCl);
           }
         }
         return;
@@ -278,7 +282,6 @@ public class Helium {
       }
 
       if (intpGroup.getResourcePool() != null) {   // local interpreter process
-        System.err.println("Here4");
         String appResourceName = WellKnownResource.resourceName(
             WellKnownResource.APPLICATION,
             paragraphId,
@@ -295,26 +298,34 @@ public class Helium {
               paragraphId,
               noteId,
               paragraphId), application);
+
+          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
           try {
             logger.info("Load application {} at {}", key.getClassName(), pool.getId());
+            Thread.currentThread().setContextClassLoader(application.getClass().getClassLoader());
             application.load();
             app = application;
           } catch (IOException e) {
             throw new ApplicationException(e);
+          } finally {
+            Thread.currentThread().setContextClassLoader(oldCl);
           }
         }
 
         if (app != null) {
+          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
           try {
             logger.info("Run application {} at {}", key.getClassName(), pool.getId());
+            Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
             ((Application) app).run(arg);
           } catch (IOException e) {
             throw new ApplicationException(e);
+          } finally {
+            Thread.currentThread().setContextClassLoader(oldCl);
           }
         }
         return;
       } else {
-        System.err.println("Here5");
         // remote interpreter's pool
         if (intpGroup.size() == 0) {
           continue;
@@ -357,7 +368,8 @@ public class Helium {
               key.getClassName(),
               noteId,
               paragraphId,
-              arg.getResourceId(),
+              arg.getResource().location(),
+              arg.getResource().name(),
               RemoteInterpreter.convert(context));
         } catch (TException e) {
           logger.error("error", e);

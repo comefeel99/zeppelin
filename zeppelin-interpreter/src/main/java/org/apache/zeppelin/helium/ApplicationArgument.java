@@ -17,20 +17,21 @@
 
 package org.apache.zeppelin.helium;
 
+import org.apache.zeppelin.resource.ResourceKey;
+
 /**
  * Application argument
  */
 public class ApplicationArgument {
 
-  private String resourceId;
+  private ResourceKey resource;
 
-  public ApplicationArgument(String resourceId) {
-    this.resourceId = resourceId;
+  public ApplicationArgument(ResourceKey resource) {
+    this.resource = resource;
   }
 
-  public String getResourceId() {
-    return resourceId;
+  public ResourceKey getResource() {
+    return resource;
   }
-
 
 }

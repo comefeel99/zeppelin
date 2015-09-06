@@ -21,36 +21,13 @@ import java.io.Serializable;
 /**
  * Information for an object in the ResourcePool
  */
-public class ResourceInfo {
-  final String location;    // where this resource lives. Usually interpreter id.
-  final String name;        // name of resource
+public class ResourceInfo extends ResourceKey {
+
   final boolean serializable;
 
   public ResourceInfo(String location, String name, Object o) {
-    this.name = name;
-    this.location = location;
+    super(location, name);
     serializable = o instanceof Serializable;
-  }
-
-  public boolean equals(Object o) {
-    if (o instanceof ResourceInfo) {
-      ResourceInfo r = (ResourceInfo) o;
-      return r.location.equals(location) && r.name.equals(name);
-    } else {
-      return false;
-    }
-  }
-
-  public int hashCode() {
-    return ("location:" + location + " name:" + name).hashCode();
-  }
-
-  public String location() {
-    return location;
-  }
-
-  public String name() {
-    return name;
   }
 
   public boolean isSerializable() {

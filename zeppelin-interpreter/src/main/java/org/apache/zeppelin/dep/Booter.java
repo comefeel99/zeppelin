@@ -49,7 +49,13 @@ public class Booter {
       home = "..";
     }
 
-    String path = home + "/" + localRepoPath;
+    String path;
+
+    if (localRepoPath.startsWith("/")) {
+      path = localRepoPath;
+    } else {
+      path = home + "/" + localRepoPath;
+    }
 
     LocalRepository localRepo =
         new LocalRepository(new File(path).getAbsolutePath());

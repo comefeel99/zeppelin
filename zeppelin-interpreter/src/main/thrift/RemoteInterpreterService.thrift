@@ -86,6 +86,6 @@ service RemoteInterpreterService {
 
 
   # helium
-  ApplicationResult loadApplication(1: string artifact, 2: string classname, 3: string noteId, 4: string paragraphId, 5: string inputResources, 6: RemoteInterpreterContext interpreterContext);
+  ApplicationResult loadApplication(1: string artifact, 2: string classname, 3: string noteId, 4: string paragraphId, 5: string inputResourcesLocation, 6: string inputResourceName, 7: RemoteInterpreterContext interpreterContext);
   i32 unloadApplication(1: string artifact, 2: string classname, 3: string noteId, 4: string paragraphId);  
 }

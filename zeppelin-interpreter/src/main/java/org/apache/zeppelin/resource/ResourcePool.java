@@ -239,6 +239,14 @@ public class ResourcePool {
   }
 
 
+  /**
+   *
+   * @param location exact location. ResourcePool.LOCATION_ANY is not supported.
+   * @param name
+   * @return
+   * @throws ClassNotFoundException
+   * @throws IOException
+   */
   public static Object getFromAll (String location, String name)
       throws ClassNotFoundException, IOException {
 
@@ -251,18 +259,21 @@ public class ResourcePool {
         // local pool
         ResourcePool pool = intpGroup.getResourcePool();
         if (pool != null && location.equals(pool.getId())) {
-          return pool.get(name);
+          Object o = pool.get(name);
+          if (o != null) {
+            return o;
+          } else {
+            continue;
+          }
         }
 
         String poolId = intpGroup.getResourcePoolId();
         if (poolId != null && !poolId.equals(location)) {
           continue;
         }
-
         interpreterGroupToCheck.add(intpGroup);
       }
     }
-
 
     for (InterpreterGroup intpGroup : interpreterGroupToCheck) {
       // remote interpreter's pool
@@ -272,7 +283,6 @@ public class ResourcePool {
       Interpreter anyInterpreter = intpGroup.get(0); // because of all remote interpreter
                                                      // in the same group uses
                                                      // the same resource pool.
-
       if (anyInterpreter == null) {
         continue;
       }
@@ -308,7 +318,11 @@ public class ResourcePool {
 
         if (location.equals(poolId)) {
           ByteBuffer buffer = c.resourcePoolGet(name);
-          return deserializeResource(buffer);
+          if (buffer == null) {
+            continue;
+          } else {
+            return deserializeResource(buffer);
+          }
         }
       } catch (TException e) {
         e.printStackTrace();
@@ -324,13 +338,17 @@ public class ResourcePool {
     if (o == null || !(o instanceof Serializable)) {
       return null;
     }
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ObjectOutputStream oos;
-    oos = new ObjectOutputStream(out);
-    oos.writeObject(o);
-    oos.close();
-    out.close();
 
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try {
+      ObjectOutputStream oos;
+      oos = new ObjectOutputStream(out);
+      oos.writeObject(o);
+      oos.close();
+      out.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
     return ByteBuffer.wrap(out.toByteArray());
   }
 

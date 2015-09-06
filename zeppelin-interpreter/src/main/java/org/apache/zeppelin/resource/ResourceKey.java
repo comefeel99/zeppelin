@@ -14,21 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.zeppelin.interpreter.data;
 
-import java.io.Serializable;
+package org.apache.zeppelin.resource;
 
 /**
- * ColumnDefinition of TableData
+ * Resource Key
  */
-public class ColumnDef implements Serializable {
-  String name;
+public class ResourceKey {
+  final String location;    // where this resource lives. Usually interpreter id.
+  final String name;        // name of resource
 
-  public ColumnDef(String name) {
+  public ResourceKey(String location, String name) {
+    this.location = location;
     this.name = name;
   }
 
-  public String getName() {
+  public int hashCode() {
+    return ("location:" + location + " name:" + name).hashCode();
+  }
+
+  public boolean equals(Object o) {
+    if (!(o instanceof ResourceKey)) {
+      return false;
+    }
+
+    ResourceKey r = (ResourceKey) o;
+    return r.name.equals(name) && r.location.equals(location);
+  }
+
+  public String name() {
     return name;
+  }
+
+  public String location() {
+    return location;
   }
 }

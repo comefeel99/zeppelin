@@ -89,11 +89,11 @@ public class DependencyResolver {
   }
 
 
-  public List<String> load(String artifact) throws Exception {
+  public List<File> load(String artifact) throws Exception {
     return load(artifact, new LinkedList<String>());
   }
 
-  public List<String> load(String artifact, Collection<String> excludes) throws Exception {
+  public List<File> load(String artifact, Collection<String> excludes) throws Exception {
     if (StringUtils.isBlank(artifact)) {
       // Should throw here
       throw new RuntimeException("Invalid artifact to load");
@@ -104,15 +104,14 @@ public class DependencyResolver {
     if (numSplits >= 3 && numSplits <= 6) {
       return loadFromMvn(artifact, excludes);
     } else {
-      LinkedList<String> libs = new LinkedList<String>();
-      libs.add(artifact);
+      LinkedList<File> libs = new LinkedList<File>();
+      libs.add(new File(artifact));
       return libs;
     }
   }
 
 
-  private List<String> loadFromMvn(String artifact, Collection<String> excludes) throws Exception {
-    List<String> loadedLibs = new LinkedList<String>();
+  private List<File> loadFromMvn(String artifact, Collection<String> excludes) throws Exception {
     Collection<String> allExclusions = new LinkedList<String>();
     allExclusions.addAll(excludes);
     allExclusions.addAll(Arrays.asList(exclusions));
@@ -132,20 +131,13 @@ public class DependencyResolver {
       }
     }
 
-    List<URL> newClassPathList = new LinkedList<URL>();
     List<File> files = new LinkedList<File>();
     for (ArtifactResult artifactResult : listOfArtifact) {
-      logger.info("Load " + artifactResult.getArtifact().getGroupId() + ":"
-          + artifactResult.getArtifact().getArtifactId() + ":"
-          + artifactResult.getArtifact().getVersion());
-      newClassPathList.add(artifactResult.getArtifact().getFile().toURI().toURL());
       files.add(artifactResult.getArtifact().getFile());
-      loadedLibs.add(artifactResult.getArtifact().getGroupId() + ":"
-          + artifactResult.getArtifact().getArtifactId() + ":"
-          + artifactResult.getArtifact().getVersion());
+      logger.info("load {}", artifactResult.getArtifact().getFile().getAbsolutePath());
     }
 
-    return loadedLibs;
+    return files;
   }
 
   /**

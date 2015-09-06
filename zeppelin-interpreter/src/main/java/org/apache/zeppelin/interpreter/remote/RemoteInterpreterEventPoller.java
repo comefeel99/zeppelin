@@ -36,7 +36,7 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.ParagraphRunner;
-import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.ResourceKey;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer.ResourceCall;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterContext;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEventType;
@@ -136,18 +136,18 @@ public class RemoteInterpreterEventPoller extends Thread {
           connectionFactory.getInterpreterContextRunnerPool().run(
               runnerFromRemote.getNoteId(), runnerFromRemote.getParagraphId());
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_POOL_SEARCH) {
-          ResourceKey searchKey = gson.fromJson(event.data, ResourceKey.class);
+          ResourceCall searchKey = gson.fromJson(event.data, ResourceCall.class);
 
           Collection<ResourceInfo> searchedInfo = ResourcePool.searchAll(
-              searchKey.location, searchKey.name);
+              searchKey.location(), searchKey.name());
 
           // send search result back to interpreter process
           Client c = connectionFactory.getClient();
 
           try {
             c.resourcePoolInfo(
-                searchKey.location,
-                searchKey.name,
+                searchKey.location(),
+                searchKey.name(),
                 gson.toJson(searchedInfo));
           } catch (TException e) {
             logger.error("error", e);
@@ -155,9 +155,9 @@ public class RemoteInterpreterEventPoller extends Thread {
             connectionFactory.releaseClient(c);
           }
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_POOL_GET) {
-          ResourceKey searchKey = gson.fromJson(event.data, ResourceKey.class);
+          ResourceCall searchKey = gson.fromJson(event.data, ResourceCall.class);
 
-          Object object = ResourcePool.getFromAll(searchKey.location, searchKey.name);
+          Object object = ResourcePool.getFromAll(searchKey.location(), searchKey.name());
           ByteBuffer buffer = ResourcePool.serializeResource(object);
 
           // send search result back to interpreter process
@@ -165,8 +165,8 @@ public class RemoteInterpreterEventPoller extends Thread {
 
           try {
             c.resourcePoolObject(
-                searchKey.location,
-                searchKey.name,
+                searchKey.location(),
+                searchKey.name(),
                 buffer);
           } catch (TException e) {
             logger.error("error", e);
