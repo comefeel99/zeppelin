@@ -20,17 +20,24 @@ package org.apache.zeppelin.helium;
  * Application spec
  */
 public class ApplicationSpec extends ApplicationKey {
+  private String icon;           // css class name or svg graphic
   private String name;           // user friendly name of this application
   private String description;    // description
   private String [] consume;     // resource pattern that this application can consume
   private transient boolean enabled;
 
-  public ApplicationSpec(String mavenArtifact, String className, String name, String description,
+  public ApplicationSpec(
+      String mavenArtifact, String className, String icon, String name, String description,
       String [] consume) {
     super(mavenArtifact, className);
+    this.icon = icon;
     this.name = name;
     this.description = description;
     this.consume = consume;
+  }
+
+  public String getIcon() {
+    return icon;
   }
 
   public String getName() {

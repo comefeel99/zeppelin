@@ -1,13 +1,13 @@
-show = {{launcherShow}}, launcherRun = {{launcherRun}}
 <div ng-show="launcherShow === 'show' && launcherAvailableApps && launcherAvailableApps.length > 0">
-  <div class="btn-group">
+  <span class="btn-group">
     <button ng-repeat="app in launcherAvailableApps"
             type="button"
-            class="btn btn-sm"
+            class="btn btn-default btn-sm"
+            tooltip="{{app.name}}"
             ng-click='$parent.launcherRun=app.className'>
-      {{app.name}}
+        <i class="{{app.icon}}"></i>
     </button>
-  </div>
+  </span>
 </div>
 <div ng-show="launcherShow === 'loading'">
   Loading <i class="fa fa-spinner fa-spin"></i>

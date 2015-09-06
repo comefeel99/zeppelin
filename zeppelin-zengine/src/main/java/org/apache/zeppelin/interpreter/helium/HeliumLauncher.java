@@ -63,11 +63,9 @@ public class HeliumLauncher extends Application {
 
   @Override
   protected void onChange(String name, Object oldObject, Object newObject) {
-
     if (name.equals(APP_TO_RUN)) {
-      logger.info("Run {}", newObject);
-
-      this.put(context, SHOW, "hide");
+      logger.info("Button Click {}, {}", newObject, (String) get(context, APP_TO_RUN));
+      this.put(context, SHOW, "loading");
       refresh();
     }
   }
@@ -114,6 +112,7 @@ public class HeliumLauncher extends Application {
 
 
     String applicationToRun = (String) get(context, APP_TO_RUN);
+    logger.info("Application to run {}", applicationToRun);
     LinkedList<ApplicationSpec> availableApps;
     if (applicationToRun == null || applicationToRun.isEmpty()) {  // show launcher
       availableApps = new LinkedList<ApplicationSpec>();
@@ -135,6 +134,7 @@ public class HeliumLauncher extends Application {
       this.watch(context, APP_TO_RUN);
       put(context, AVAILABLE_APPS, availableApps);
     } else { // load and run app
+      this.put(context, SHOW, "hide");
       ApplicationSpec spec = null;
       for (ApplicationSpec s : helium.getAllSpecs()) {
         if (s.getClassName().equals(applicationToRun)) {

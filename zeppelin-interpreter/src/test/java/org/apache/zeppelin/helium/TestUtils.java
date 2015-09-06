@@ -38,8 +38,11 @@ public class TestUtils {
     }
   }
 
-  public static void createSpecFile(File file, String artifact, String className, String name, String desc) throws IOException {
-    ApplicationSpec spec = new ApplicationSpec(artifact, className, name, desc, new String[]{ "resource"});
+  public static void createSpecFile(
+      File file, String artifact, String className, String name, String desc)
+          throws IOException {
+    ApplicationSpec spec =
+        new ApplicationSpec(artifact, className, "fa fa-play", name, desc, new String[]{ "resource"});
     Gson gson = new Gson();
 
     String jsonString = gson.toJson(spec);

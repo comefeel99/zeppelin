@@ -52,7 +52,7 @@ public class HeliumConfTest {
     assertEquals(0, hc.enabled.size());
 
     // enable spec
-    ApplicationSpec spec = new ApplicationSpec("artifact", "className", "name", "desc", new String[]{"resource"});
+    ApplicationSpec spec = new ApplicationSpec("artifact", "className", "fa fa-play", "name", "desc", new String[]{"resource"});
     assertFalse(spec.isEnabled());
 
     // check spec enabled
