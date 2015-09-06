@@ -19,14 +19,15 @@ package org.apache.zeppelin.interpreter.helium;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.helium.Application;
 import org.apache.zeppelin.helium.ApplicationArgument;
 import org.apache.zeppelin.helium.ApplicationException;
-import org.apache.zeppelin.helium.ApplicationKey;
 import org.apache.zeppelin.helium.ApplicationSpec;
 import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.helium.HeliumConf;
@@ -51,59 +52,23 @@ public class HeliumLauncher extends Application {
 
   private Helium helium;
 
-  private LinkedList<ApplicationSpec> availableApps;
+  private final String APP_TO_RUN = "launcherRun";              // app class name to run
+  private final String SHOW = "launcherShow";                     // show, hide, loading
+  private final String AVAILABLE_APPS = "launcherAvailableApps";
+  private InterpreterContext context;
 
-  private Collection<ResourceInfo> searchResult;
-
-  public HeliumLauncher(InterpreterContext context) {
-    super(context);
+  public HeliumLauncher() {
     this.helium = Helium.singleton();
   }
 
   @Override
   protected void onChange(String name, Object oldObject, Object newObject) {
-    InterpreterContext context = getInterpreterContext();
 
-    if (name.equals("run")) {
+    if (name.equals(APP_TO_RUN)) {
       logger.info("Run {}", newObject);
 
-      if (availableApps == null) {
-        logger.error("no available app");
-        return;
-      }
-
-      String run = (String) newObject;
-      for (ApplicationSpec spec : availableApps) {
-        if (spec.getClassName().equals(run)) {
-
-          // get resource that application can consume
-          for (ResourceInfo resource : searchResult) {
-            if (helium.canConsume(spec, resource.name())) {
-              logger.info("Load {} at {} with {}",
-                  spec.getName(), resource.location(), resource.name());
-
-              String location = resource.location();
-              if (devMode) {
-                location = context.getResourcePool().getId();
-              }
-
-              try {
-                helium.load(spec,
-                    location,
-                    context.getNoteId(),
-                    getPreviousParagraphId(),
-                    new ApplicationArgument(new ResourceKey(resource.location(), resource.name())),
-                    context);
-              } catch (ApplicationException e) {
-                logger.error("Error on loading " + spec.getName(), e);
-              }
-              break;
-            }
-          }
-        }
-      }
-
-      bind("run", "");
+      this.put(context, SHOW, "hide");
+      refresh();
     }
   }
 
@@ -111,15 +76,102 @@ public class HeliumLauncher extends Application {
   public void signal(Signal signal) {
   }
 
-  @Override
-  public void load() throws IOException {
-    InterpreterContext context = getInterpreterContext();
-    context.out.write("%angular ");
-    context.out.writeResource("interpreter/helium/HeliumLauncher.html");
+  private void refresh() {
+    for (InterpreterContextRunner runner : context.getRunners()) {
+      if (context.getParagraphId().equals(runner.getParagraphId())) {
+        // refresh
+        logger.info("refresh");
+        runner.run();
+        break;
+      }
+    }
   }
 
-  private String getPreviousParagraphId() {
-    InterpreterContext context = getInterpreterContext();
+  @Override
+  public void load() throws IOException {
+  }
+
+
+  @Override
+  public void run(ApplicationArgument arg, InterpreterContext context) throws IOException {
+    this.context = context;
+
+    context.out.setHeader("%angular ");
+    context.out.writeResource("interpreter/helium/HeliumLauncher.html");
+
+    // get previous paragraph's results
+    String previousParagraphId = getPreviousParagraphId(context);
+
+    Collection<ResourceInfo> searchResult;
+    if (HeliumLauncher.devMode) {
+      ResourcePool pool = context.getResourcePool();
+      searchResult = pool.search(WellKnownResource.resourceNameBelongsTo(
+          context.getNoteId(), previousParagraphId));
+    } else {
+      searchResult = ResourcePool.searchAll(WellKnownResource.resourceNameBelongsTo(
+          context.getNoteId(), previousParagraphId));
+    }
+
+
+    String applicationToRun = (String) get(context, APP_TO_RUN);
+    LinkedList<ApplicationSpec> availableApps;
+    if (applicationToRun == null || applicationToRun.isEmpty()) {  // show launcher
+      availableApps = new LinkedList<ApplicationSpec>();
+      for (ResourceInfo resource : searchResult) {
+        Collection<ApplicationSpec> apps = helium.getAllApplicationsForResource(resource.name());
+        if (apps == null || apps.isEmpty()) {
+          continue;
+        }
+
+        for (ApplicationSpec app : apps) {
+          if (!availableApps.contains(app)) {
+            availableApps.add(app);
+          }
+        }
+      }
+
+      this.put(context, SHOW, "show");
+      this.put(context, APP_TO_RUN, "");
+      this.watch(context, APP_TO_RUN);
+      put(context, AVAILABLE_APPS, availableApps);
+    } else { // load and run app
+      ApplicationSpec spec = null;
+      for (ApplicationSpec s : helium.getAllSpecs()) {
+        if (s.getClassName().equals(applicationToRun)) {
+          spec = s;
+          break;
+        }
+      }
+
+      // get resource that application can consume
+      for (ResourceInfo resource : searchResult) {
+        if (helium.canConsume(spec, resource.name())) {
+          logger.info("Load {} at {} with {}",
+              spec.getName(), resource.location(), resource.name());
+
+          String location = resource.location();
+          if (HeliumLauncher.devMode) {
+            location = context.getResourcePool().getId();
+          }
+
+          helium.load(spec,
+              location,
+              context.getNoteId(),
+              previousParagraphId,
+              new ApplicationArgument(new ResourceKey(resource.location(), resource.name())),
+              context);
+        }
+      }
+    }
+  }
+
+  @Override
+  public void unload() throws ApplicationException {
+  }
+
+
+
+  private String getPreviousParagraphId(InterpreterContext context) {
     InterpreterContextRunner previousParagraphRunner = null;
 
     List<InterpreterContextRunner> runners = context.getRunners();
@@ -138,46 +190,6 @@ public class HeliumLauncher extends Application {
 
     return previousParagraphRunner.getParagraphId();
   }
-
-  @Override
-  public void run(ApplicationArgument arg) throws IOException {
-    // get previous paragraph's results
-
-    InterpreterContext context = getInterpreterContext();
-    String previousParagraphId = getPreviousParagraphId();
-
-    ResourcePool pool = context.getResourcePool();
-
-    searchResult = pool.search(WellKnownResource.resourceNameBelongsTo(
-        context.getNoteId(), previousParagraphId));
-    this.bind("resource", searchResult);
-
-    availableApps = new LinkedList<ApplicationSpec>();
-    for (ResourceInfo resource : searchResult) {
-      Collection<ApplicationSpec> apps = helium.getAllApplicationsForResource(resource.name());
-      if (apps == null || apps.isEmpty()) {
-        continue;
-      }
-
-      for (ApplicationSpec app : apps) {
-        if (!availableApps.contains(app)) {
-          availableApps.add(app);
-        }
-      }
-    }
-
-    this.bind("availableApp", availableApps);
-
-    // handler for button
-    this.bind("run", "");
-    this.watch("run");
-  }
-
-  @Override
-  public void unload() throws ApplicationException {
-  }
-
-
   /**
    * Dev mode
    */
@@ -194,4 +206,5 @@ public class HeliumLauncher extends Application {
     dev.server.start();
     dev.server.join();
   }
+
 }

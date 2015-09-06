@@ -25,18 +25,20 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Run this server for development mode.
  */
 public class ZeppelinApplicationDevServer {
-
+  Logger logger = LoggerFactory.getLogger(ZeppelinApplicationDevServer.class);
   public ZeppelinDevServer server;
 
   public ZeppelinApplicationDevServer(final String className, final ApplicationArgument arg)
       throws Exception {
     int port = ZeppelinDevServer.DEFAULT_TEST_INTERPRETER_PORT;
-    String localDepRepoDir = System.getProperty("java.io.tmpdir") + "/localrepo";
+    String localDepRepoDir = "/tmp/local-repo";
 
     server = new ZeppelinDevServer(port, localDepRepoDir,
         new DevInterpreter.InterpreterEvent() {
@@ -48,16 +50,17 @@ public class ZeppelinApplicationDevServer {
           if (app == null) {
             try {
               app = (Application) ClassLoader.getSystemClassLoader().loadClass(className)
-                .getConstructor(InterpreterContext.class).newInstance(context);
+                .newInstance();
+              logger.info("Load application " + app.getClass().getName());
               app.load();
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException | NoSuchMethodException | SecurityException
-                | ClassNotFoundException | IOException e) {
+                | SecurityException | ClassNotFoundException | IOException e) {
               throw new InterpreterException(e);
             }
           }
           try {
-            app.run(arg);
+            logger.info("Run application " + app.getClass().getName());
+            app.run(arg, context);
           } catch (IOException e) {
             throw new InterpreterException(e);
           }

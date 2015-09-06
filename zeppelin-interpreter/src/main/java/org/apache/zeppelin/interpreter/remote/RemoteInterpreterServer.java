@@ -41,8 +41,10 @@ import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.helium.Application;
 import org.apache.zeppelin.helium.ApplicationArgument;
+import org.apache.zeppelin.helium.ApplicationException;
 import org.apache.zeppelin.helium.ApplicationKey;
 import org.apache.zeppelin.helium.ApplicationLoader;
+import org.apache.zeppelin.helium.Helium;
 import org.apache.zeppelin.interpreter.ClassloaderInterpreter;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
@@ -113,7 +115,6 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     TServerSocket serverTransport = new TServerSocket(port);
     server = new TThreadPoolServer(
         new TThreadPoolServer.Args(serverTransport).processor(processor));
-
   }
 
   private ApplicationLoader createAppLoader(String localRepo) {
@@ -763,46 +764,26 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       RemoteInterpreterContext interpreterContext) throws TException {
     InterpreterContext context = convert(interpreterContext);
 
-    String resourceName = WellKnownResource.resourceName(
-        WellKnownResource.APPLICATION,
-        classname,
-        noteId,
-        paragraphId);
-
-    Object app = resourcePool.get(resourceName);
-    if (app == null) {
-      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-      try {
-        Application application = appLoader.load(new ApplicationKey(artifact, classname), context);
-        resourcePool.put(resourceName, application);
-        Thread.currentThread().setContextClassLoader(application.getClass().getClassLoader());
-        application.load();
-        app = application;
-      } catch (Exception e) {
-        logger.error("Error on load application " + classname, e);
-        e.printStackTrace(new PrintWriter(context.out));
-      } finally {
-        Thread.currentThread().setContextClassLoader(oldCl);
-      }
-      try {
-        return new ApplicationResult(0, new String(context.out.toByteArray(true)));
-      } catch (IOException e) {
-        logger.error("error", e);
-        return new ApplicationResult(1, e.getMessage());
-      }
+    try {
+      Helium.loadLocal(
+          new ApplicationKey(artifact, classname),
+          noteId,
+          paragraphId,
+          resourcePool,
+          new ApplicationArgument(new ResourceKey(inputResourceLocation, inputResourceName)),
+          context,
+          appLoader
+      );
+    } catch (ApplicationException e) {
+      logger.error("Error on run application " + classname, e);
+      return new ApplicationResult(1, e.getMessage());
     }
 
-    ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
     try {
-      Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
-      ((Application) app).run(new ApplicationArgument(
-          new ResourceKey(inputResourceLocation, inputResourceName)));
       return new ApplicationResult(0, new String(context.out.toByteArray()));
     } catch (IOException e) {
       logger.error("Error on run application " + classname, e);
       return new ApplicationResult(1, e.getMessage());
-    } finally {
-      Thread.currentThread().setContextClassLoader(oldCl);
     }
   }
 
@@ -813,25 +794,13 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   public int unloadApplication(String artifact, String classname,
       String noteId, String paragraphId) throws TException {
 
-    String resourceName = WellKnownResource.resourceName(
-        WellKnownResource.APPLICATION,
-        classname,
-        noteId,
-        paragraphId);
-
-    Object app = resourcePool.get(resourceName);
-    if (app != null) {
-      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-      try {
-        Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
-        ((Application) app).unload();
-      } catch (IOException e) {
-        logger.error("Error on unload application " + classname, e);
-        return 1;
-      } finally {
-        Thread.currentThread().setContextClassLoader(oldCl);
-      }
+    try {
+      Helium.unloadLocal(noteId, paragraphId, resourcePool);
+    } catch (ApplicationException e) {
+      logger.error("Error on unload application " + classname, e);
+      return 1;
     }
+
     return 0;
   }
 }

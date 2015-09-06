@@ -667,7 +667,7 @@ public class InterpreterFactory implements ResourcePoolEventHandler {
     LazyOpenInterpreter intp = new LazyOpenInterpreter(new RemoteInterpreter(
         property, className, conf.getInterpreterRemoteRunnerPath(),
         interpreterPath, connectTimeout,
-        conf.getLocalRepoDir()));
+        new File(conf.getLocalRepoDir()).getAbsolutePath()));
     return intp;
   }
 

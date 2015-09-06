@@ -116,6 +116,33 @@ public class Helium {
 
     return false;
   }
+
+  public static void unloadLocal(String noteId, String paragraphId, ResourcePool pool)
+      throws ApplicationException {
+    Logger logger = LoggerFactory.getLogger(Helium.class);
+
+    Object app = pool.get(WellKnownResource.resourceName(
+        WellKnownResource.APPLICATION,
+        paragraphId,
+        noteId,
+        paragraphId));
+
+    if (app != null) {
+      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+      try {
+        Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
+        ((Application) app).unload();
+        logger.info("Unload {} from note={}, paragraph={}",
+            app.getClass().getName(), noteId, paragraphId);
+      } catch (IOException e) {
+        throw new ApplicationException(e);
+      } finally {
+        Thread.currentThread().setContextClassLoader(oldCl);
+      }
+    }
+    return;
+  }
+
   public void unload(ApplicationKey key, String location, String noteId, String paragraphId)
       throws ApplicationException {
     for (InterpreterGroup intpGroup : getAllInterpreterGroups()) {
@@ -157,24 +184,7 @@ public class Helium {
         continue;
       }
       if (intpGroup.getResourcePool() != null) {   // local interpreter process
-        ResourcePool pool = intpGroup.getResourcePool();
-        Object app = pool.get(WellKnownResource.resourceName(
-            WellKnownResource.APPLICATION,
-            paragraphId,
-            noteId,
-            paragraphId));
-
-        if (app != null) {
-          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-          try {
-            Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
-            ((Application) app).unload();
-          } catch (IOException e) {
-            throw new ApplicationException(e);
-          } finally {
-            Thread.currentThread().setContextClassLoader(oldCl);
-          }
-        }
+        unloadLocal(noteId, paragraphId, intpGroup.getResourcePool());
         return;
       } else {
         // remote interpreter's pool
@@ -241,6 +251,61 @@ public class Helium {
     return all;
   }
 
+  public static void loadLocal(
+      ApplicationKey key,
+      String noteId,
+      String paragraphId,
+      ResourcePool pool,
+      ApplicationArgument arg,
+      InterpreterContext context,
+      ApplicationLoader loader) throws ApplicationException {
+    Logger logger = LoggerFactory.getLogger(Helium.class);
+
+    String appResourceName = WellKnownResource.resourceName(
+        WellKnownResource.APPLICATION,
+        paragraphId,
+        noteId,
+        paragraphId);
+
+    Object app = pool.get(appResourceName);
+    if (app == null) {
+      Application application = loader.load(key);
+      pool.put(WellKnownResource.resourceName(
+          WellKnownResource.APPLICATION,
+          paragraphId,
+          noteId,
+          paragraphId), application);
+
+      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+      try {
+        Thread.currentThread().setContextClassLoader(application.getClass().getClassLoader());
+        application.load();
+        app = application;
+        logger.info("Load application {}, note={}, paragraph={}",
+            app.getClass().getName(), noteId, paragraphId);
+      } catch (IOException e) {
+        throw new ApplicationException(e);
+      } finally {
+        Thread.currentThread().setContextClassLoader(oldCl);
+      }
+    }
+
+    if (app != null) {
+      ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+      try {
+        Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
+        ((Application) app).run(arg, context);
+        logger.info("Run application {}, note={}, paragraph={}",
+            app.getClass().getName(), noteId, paragraphId);
+      } catch (IOException e) {
+        throw new ApplicationException(e);
+      } finally {
+        Thread.currentThread().setContextClassLoader(oldCl);
+      }
+    }
+  }
+
+
   public void load(ApplicationKey key, String location, String noteId, String paragraphId,
       ApplicationArgument arg,
       InterpreterContext context)
@@ -282,48 +347,15 @@ public class Helium {
       }
 
       if (intpGroup.getResourcePool() != null) {   // local interpreter process
-        String appResourceName = WellKnownResource.resourceName(
-            WellKnownResource.APPLICATION,
-            paragraphId,
+        loadLocal(
+            key,
             noteId,
-            paragraphId);
-
-        ResourcePool pool = intpGroup.getResourcePool();
-
-        Object app = pool.get(appResourceName);
-        if (app == null) {
-          Application application = intpGroup.getAppLoader().load(key, context);
-          pool.put(WellKnownResource.resourceName(
-              WellKnownResource.APPLICATION,
-              paragraphId,
-              noteId,
-              paragraphId), application);
-
-          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-          try {
-            logger.info("Load application {} at {}", key.getClassName(), pool.getId());
-            Thread.currentThread().setContextClassLoader(application.getClass().getClassLoader());
-            application.load();
-            app = application;
-          } catch (IOException e) {
-            throw new ApplicationException(e);
-          } finally {
-            Thread.currentThread().setContextClassLoader(oldCl);
-          }
-        }
-
-        if (app != null) {
-          ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
-          try {
-            logger.info("Run application {} at {}", key.getClassName(), pool.getId());
-            Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
-            ((Application) app).run(arg);
-          } catch (IOException e) {
-            throw new ApplicationException(e);
-          } finally {
-            Thread.currentThread().setContextClassLoader(oldCl);
-          }
-        }
+            paragraphId,
+            intpGroup.getResourcePool(),
+            arg,
+            context,
+            intpGroup.getAppLoader()
+        );
         return;
       } else {
         // remote interpreter's pool
@@ -375,6 +407,14 @@ public class Helium {
           logger.error("error", e);
         } finally {
           cf.releaseClient(c);
+        }
+
+        if (ret.output != null) {
+          try {
+            context.out.write(ret.output.getBytes());
+          } catch (IOException e) {
+            throw new ApplicationException(e);
+          }
         }
 
         if (ret.code != 0) {

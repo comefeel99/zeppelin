@@ -26,6 +26,7 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
+
 /**
  * ZeppelinApplicationOutput.
  * Output is text data.
@@ -34,6 +35,7 @@ public class InterpreterOutput extends OutputStream {
 
   private final List<Object> outList = new LinkedList<Object>();
   private InterpreterOutputChangeWatcher watcher;
+  Object header;
 
   public InterpreterOutput() {
     clear();
@@ -46,12 +48,17 @@ public class InterpreterOutput extends OutputStream {
   }
 
   public void clear() {
+    header = null;
     synchronized (outList) {
       outList.clear();
       if (watcher != null) {
         watcher.clear();
       }
     }
+  }
+
+  public void setHeader(String o) {
+    this.header = o.getBytes();
   }
 
   @Override
@@ -134,31 +141,38 @@ public class InterpreterOutput extends OutputStream {
 
   public byte[] toByteArray(boolean clear) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
+    List<Object> all = new LinkedList<Object>();
 
     synchronized (outList) {
-      for (Object o : outList) {
-        if (o instanceof File) {
-          File f = (File) o;
-          FileInputStream fin = new FileInputStream(f);
-          copyStream(fin, out);
-          fin.close();
-        } else if (o instanceof byte[]) {
-          out.write((byte[]) o);
-        } else if (o instanceof Integer) {
-          out.write((int) o);
-        } else if (o instanceof URL) {
-          InputStream fin = ((URL) o).openStream();
-          copyStream(fin, out);
-          fin.close();
-        } else {
-          // can not handle the object
-        }
+      if (header != null) {
+        all.add(header);
       }
+      all.addAll(outList);
+    }
 
-      if (clear) {
-        clear();
+    for (Object o : all) {
+      if (o instanceof File) {
+        File f = (File) o;
+        FileInputStream fin = new FileInputStream(f);
+        copyStream(fin, out);
+        fin.close();
+      } else if (o instanceof byte[]) {
+        out.write((byte[]) o);
+      } else if (o instanceof Integer) {
+        out.write((int) o);
+      } else if (o instanceof URL) {
+        InputStream fin = ((URL) o).openStream();
+        copyStream(fin, out);
+        fin.close();
+      } else {
+        // can not handle the object
       }
     }
+
+    if (clear) {
+      clear();
+    }
+
     out.close();
     return out.toByteArray();
   }

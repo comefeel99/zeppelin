@@ -17,22 +17,32 @@
 package org.apache.zeppelin.interpreter.helium;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
-import org.apache.zeppelin.helium.Helium;
+
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Interpreter for Application launch
  */
 public class HeliumInterpreter extends Interpreter {
+  Logger logger = LoggerFactory.getLogger(HeliumInterpreter.class);
+
   static {
     // it's not registering using Interpreter.register()
     // this is special interpreter that available in all notebooks
@@ -59,23 +69,21 @@ public class HeliumInterpreter extends Interpreter {
 
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
-
-    HeliumLauncher launcher = new HeliumLauncher(context);
-
+    // create launcher
+    HeliumLauncher launcher = new HeliumLauncher();
     try {
       launcher.load();
-      launcher.run(null);
     } catch (IOException e) {
       throw new InterpreterException(e);
     }
 
+    try {
+      launcher.run(null, context);
+    } catch (IOException e) {
+      throw new InterpreterException(e);
+    }
     return new InterpreterResult(Code.SUCCESS, "");
   }
-
-  private void getAvailableApps() {
-
-  }
-
 
   @Override
   public void cancel(InterpreterContext context) {
@@ -100,6 +108,26 @@ public class HeliumInterpreter extends Interpreter {
   public Scheduler getScheduler() {
     return SchedulerFactory.singleton().createOrGetParallelScheduler(
         HeliumInterpreter.class.getName() + this.hashCode(), 5);
+  }
+
+  private String getPreviousParagraphId(InterpreterContext context) {
+    InterpreterContextRunner previousParagraphRunner = null;
+
+    List<InterpreterContextRunner> runners = context.getRunners();
+    for (int i = 0; i < runners.size(); i++) {
+      if (runners.get(i).getParagraphId().equals(context.getParagraphId())) {
+        if (i > 0) {
+          previousParagraphRunner = runners.get(i - 1);
+        }
+        break;
+      }
+    }
+
+    if (previousParagraphRunner == null) {
+      return null;
+    }
+
+    return previousParagraphRunner.getParagraphId();
   }
 
 }

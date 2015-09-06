@@ -47,7 +47,7 @@ public class ApplicationLoader {
         new HashMap<ApplicationKey, Class<Application>>());
   }
 
-  private Class<Application> load(ApplicationKey spec) throws Exception {
+  private Class<Application> loadClass(ApplicationKey spec) throws Exception {
     if (cached.containsKey(spec)) {
       return cached.get(spec);
     }
@@ -77,25 +77,21 @@ public class ApplicationLoader {
 //        Class.forName(spec.getClassName(), true, applicationClassLoader);
   }
 
-  public Application load(ApplicationKey spec, InterpreterContext context)
-      throws ApplicationException {
+  public Application load(ApplicationKey spec) throws ApplicationException {
     try {
-      return run(load(spec), context);
+      return create(loadClass(spec));
     } catch (Exception e) {
       throw new ApplicationException(e);
     }
   }
 
-  private Application run(Class<Application> appClass, InterpreterContext context)
+  private Application create(Class<Application> appClass)
       throws ApplicationException {
     ClassLoader oldcl = Thread.currentThread().getContextClassLoader();
     Thread.currentThread().setContextClassLoader(appClass.getClassLoader());
 
     try {
-      Constructor<Application> constructor =
-          appClass.getConstructor(InterpreterContext.class);
-
-      Application app = constructor.newInstance(context);
+      Application app = appClass.newInstance();
       return app;
     } catch (Exception e) {
       throw new ApplicationException(e);

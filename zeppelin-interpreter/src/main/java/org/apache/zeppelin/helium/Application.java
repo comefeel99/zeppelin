@@ -30,7 +30,6 @@ import org.apache.zeppelin.resource.ResourceKey;
  * Base class for ZeppelinApplication
  */
 public abstract class Application {
-  private InterpreterContext context;
   private Watcher watcher;
 
   private class Watcher extends AngularObjectWatcher {
@@ -48,8 +47,7 @@ public abstract class Application {
     }
   }
 
-  public Application(InterpreterContext context) {
-    this.context = context;
+  public Application() {
   }
 
   /**
@@ -77,7 +75,8 @@ public abstract class Application {
    * @return
    * @throws IOException
    */
-  public abstract void run(ApplicationArgument arg) throws ApplicationException, IOException;
+  public abstract void run(ApplicationArgument arg, InterpreterContext context)
+      throws ApplicationException, IOException;
 
 
   /**
@@ -88,35 +87,33 @@ public abstract class Application {
   public abstract void unload() throws ApplicationException, IOException;
 
 
-
-  /**
-   * Get interpreter context that this application is running
-   * @return
-   */
-  public InterpreterContext getInterpreterContext() {
-    return context;
-  }
-
-  protected Object getResourceFromPool(ResourceKey resource) {
-    return context.getResourcePool().get(resource.location(), resource.name());
-  }
-
   /**
    * Bind object to angular scope
    * @param name
    * @param o
    */
-  protected void bind(String name, Object o) {
+  protected void put(InterpreterContext context, String name, Object o) {
     AngularObjectRegistry registry = context.getAngularObjectRegistry();
     registry.add(name, o, context.getNoteId(), context.getParagraphId());
   }
 
-  protected void unbind(String name, Object o) {
+  protected void remove(InterpreterContext context, String name) {
     AngularObjectRegistry registry = context.getAngularObjectRegistry();
     registry.remove(name, context.getNoteId(), context.getParagraphId());
   }
 
-  protected void watch(String name) {
+  protected Object get(InterpreterContext context, String name) {
+    AngularObjectRegistry registry = context.getAngularObjectRegistry();
+    AngularObject ao = registry.get(name, context.getNoteId(), context.getParagraphId());
+    if (ao != null) {
+      return ao.get();
+    } else {
+      return null;
+    }
+  }
+
+  protected void watch(InterpreterContext context, String name) {
+    //unwatch(context, name);
     AngularObjectRegistry registry = context.getAngularObjectRegistry();
     AngularObject ao = registry.get(name, context.getNoteId(), context.getParagraphId());
     if (ao != null) {
@@ -124,7 +121,7 @@ public abstract class Application {
     }
   }
 
-  protected void unwatch(String name) {
+  protected void unwatch(InterpreterContext context, String name) {
     AngularObjectRegistry registry = context.getAngularObjectRegistry();
     AngularObject ao = registry.get(name, context.getNoteId(), context.getParagraphId());
     if (ao != null) {

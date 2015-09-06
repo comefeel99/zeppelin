@@ -40,7 +40,6 @@ public class ZeppelinDevServer extends
   public static final int DEFAULT_TEST_INTERPRETER_PORT = 29914;
 
   DevInterpreter interpreter = null;
-  InterpreterOutput out = null;
   private InterpreterEvent listener;
 
   public ZeppelinDevServer(int port, String localDependencyRepo,
@@ -62,7 +61,6 @@ public class ZeppelinDevServer extends
               new ClassloaderInterpreter(interpreter, this.getClass().getClassLoader())));
           interpreter.setInterpreterGroup(interpreterGroup);
         }
-        System.err.println("ResourcePoolId = " + getResourcePool().getId());
         interpreterGroup.setResourcePool(getResourcePool());
       }
       notify();
@@ -72,15 +70,11 @@ public class ZeppelinDevServer extends
 
   @Override
   protected InterpreterOutput createInterpreterOutput() {
-    if (out == null) {
-      try {
-        out =  new InterpreterOutput(this);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    try {
+      return new InterpreterOutput(this);
+    } catch (IOException e) {
+      return null;
     }
-
-    return out;
   }
 
   @Override

@@ -146,6 +146,10 @@ public class ResourcePool {
     }
   }
 
+  public static Collection<ResourceInfo> searchAll (String namePattern) {
+    return searchAll(LOCATION_ANY, namePattern);
+  }
+
   public static Collection<ResourceInfo> searchAll (String location, String namePattern) {
     Gson gson = new Gson();
     List<ResourceInfo> searchedInfo = new LinkedList<ResourceInfo>();
