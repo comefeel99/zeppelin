@@ -53,6 +53,7 @@ import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.InterpreterUtils;
 import org.apache.zeppelin.interpreter.WrappedInterpreter;
+import org.apache.zeppelin.resource.WellKnownResource;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.spark.dep.DependencyContext;
@@ -625,6 +626,8 @@ public class SparkInterpreter extends Interpreter {
       return new InterpreterResult(Code.ERROR, sparkConfValidator.getError());
     }
 
+    exposeSparkContext(context, sc);
+
     z.setInterpreterContext(context);
     if (line == null || line.trim().length() == 0) {
       return new InterpreterResult(Code.SUCCESS);
@@ -841,6 +844,14 @@ public class SparkInterpreter extends Interpreter {
     } else {
       return Code.ERROR;
     }
+  }
+
+  private void exposeSparkContext(InterpreterContext context, SparkContext sc) {
+    context.getResourcePool().put(
+        WellKnownResource.SPARK_CONTEXT.resourceName(
+            WellKnownResource.SPARK_CONTEXT.type(),
+            WellKnownResource.INSTANCE_RESULT,
+            context.getNoteId(), context.getParagraphId()), sc);
   }
 
   @Override

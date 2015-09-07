@@ -33,6 +33,7 @@ import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.apache.zeppelin.interpreter.LazyOpenInterpreter;
 import org.apache.zeppelin.interpreter.WrappedInterpreter;
+import org.apache.zeppelin.resource.WellKnownResource;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.slf4j.Logger;
@@ -103,6 +104,14 @@ public class SparkSqlInterpreter extends Interpreter {
   @Override
   public void close() {}
 
+  private void exposeSparkSqlContext(InterpreterContext context, SQLContext sqlc) {
+    context.getResourcePool().put(
+        WellKnownResource.SPARK_SQLCONTEXT.resourceName(
+            WellKnownResource.SPARK_SQLCONTEXT.type(),
+            WellKnownResource.INSTANCE_RESULT,
+            context.getNoteId(), context.getParagraphId()), sqlc);
+  }
+
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
     SparkInterpreter sparkInterpreter = getSparkInterpreter();
@@ -113,6 +122,7 @@ public class SparkSqlInterpreter extends Interpreter {
     SQLContext sqlc = null;
 
     sqlc = sparkInterpreter.getSQLContext();
+    exposeSparkSqlContext(context, sqlc);
 
     SparkContext sc = sqlc.sparkContext();
     if (concurrentSQL()) {
