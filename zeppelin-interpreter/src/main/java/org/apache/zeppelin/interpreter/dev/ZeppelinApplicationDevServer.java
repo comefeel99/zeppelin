@@ -34,10 +34,14 @@ import org.slf4j.LoggerFactory;
 public class ZeppelinApplicationDevServer {
   Logger logger = LoggerFactory.getLogger(ZeppelinApplicationDevServer.class);
   public ZeppelinDevServer server;
+  private ApplicationArgument arg;
 
-  public ZeppelinApplicationDevServer(final String className, final ApplicationArgument arg)
+  public ZeppelinApplicationDevServer(final String className) throws Exception {
+    this(ZeppelinDevServer.DEFAULT_TEST_INTERPRETER_PORT, className);
+  }
+
+  public ZeppelinApplicationDevServer(int port, final String className)
       throws Exception {
-    int port = ZeppelinDevServer.DEFAULT_TEST_INTERPRETER_PORT;
     String localDepRepoDir = "/tmp/local-repo";
 
     server = new ZeppelinDevServer(port, localDepRepoDir,
@@ -67,6 +71,10 @@ public class ZeppelinApplicationDevServer {
           return new InterpreterResult(Code.SUCCESS, "");
         }
       });
+  }
+
+  public void setArgument(ApplicationArgument arg) {
+    this.arg = arg;
   }
 
 }

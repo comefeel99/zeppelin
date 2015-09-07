@@ -20,13 +20,13 @@ package org.apache.zeppelin.resource;
  * Well known resource names (patterns)
  */
 public enum WellKnownResource {
-  APPLICATION("zeppelin.app.Application"),
-  TABLE_DATA("zeppelin.data.TableData"),
+  APPLICATION("org.apache.zeppelin.helium.Application"),
+  TABLE_DATA("org.apache.zeppelin.interpreter.data.TableData"),
   /*
    * Spark interpreter provided resource
    */
-  SPARK_CONTEXT("spark.SparkContext"),
-  SPARK_SQLCONTEXT("spark.SQLContext");
+  SPARK_CONTEXT("org.apache.spark.SparkContext"),
+  SPARK_SQLCONTEXT("org.apache.spark.sql.SQLContext");
 
 
   String type;

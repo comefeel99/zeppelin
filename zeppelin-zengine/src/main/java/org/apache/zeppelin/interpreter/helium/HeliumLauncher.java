@@ -201,7 +201,7 @@ public class HeliumLauncher extends Application {
     HeliumLauncher.devMode = true;
 
     ZeppelinApplicationDevServer dev =
-        new ZeppelinApplicationDevServer(HeliumLauncher.class.getName(), null);
+        new ZeppelinApplicationDevServer(HeliumLauncher.class.getName());
 
     dev.server.start();
     dev.server.join();
