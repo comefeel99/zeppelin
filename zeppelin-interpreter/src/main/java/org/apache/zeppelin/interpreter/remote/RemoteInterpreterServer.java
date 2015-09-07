@@ -806,7 +806,8 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
       String noteId, String paragraphId) throws TException {
 
     try {
-      Helium.unloadLocal(noteId, paragraphId, resourcePool);
+      Helium.unloadLocal(
+          new ApplicationKey(artifact, classname), noteId, paragraphId, resourcePool);
     } catch (ApplicationException e) {
       logger.error("Error on unload application " + classname, e);
       return 1;

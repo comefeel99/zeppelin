@@ -117,13 +117,14 @@ public class Helium {
     return false;
   }
 
-  public static void unloadLocal(String noteId, String paragraphId, ResourcePool pool)
+  public static void unloadLocal(
+      ApplicationKey key, String noteId, String paragraphId, ResourcePool pool)
       throws ApplicationException {
     Logger logger = LoggerFactory.getLogger(Helium.class);
 
     Object app = pool.get(WellKnownResource.resourceName(
         WellKnownResource.APPLICATION,
-        paragraphId,
+        key.getClassName(),
         noteId,
         paragraphId));
 
@@ -184,7 +185,7 @@ public class Helium {
         continue;
       }
       if (intpGroup.getResourcePool() != null) {   // local interpreter process
-        unloadLocal(noteId, paragraphId, intpGroup.getResourcePool());
+        unloadLocal(key, noteId, paragraphId, intpGroup.getResourcePool());
         return;
       } else {
         // remote interpreter's pool
@@ -263,7 +264,7 @@ public class Helium {
 
     String appResourceName = WellKnownResource.resourceName(
         WellKnownResource.APPLICATION,
-        paragraphId,
+        key.className,
         noteId,
         paragraphId);
 
@@ -272,7 +273,7 @@ public class Helium {
       Application application = loader.load(key);
       pool.put(WellKnownResource.resourceName(
           WellKnownResource.APPLICATION,
-          paragraphId,
+          key.className,
           noteId,
           paragraphId), application);
 

@@ -134,7 +134,7 @@ public class HeliumLauncher extends Application {
       this.watch(context, APP_TO_RUN);
       put(context, AVAILABLE_APPS, availableApps);
     } else { // load and run app
-      this.put(context, SHOW, "hide");
+      this.put(context, SHOW, "show");
       ApplicationSpec spec = null;
       for (ApplicationSpec s : helium.getAllSpecs()) {
         if (s.getClassName().equals(applicationToRun)) {
