@@ -418,9 +418,7 @@ public class InterpreterFactory implements ResourcePoolEventHandler {
             Interpreter classLoaderInterpreter = ((LazyOpenInterpreter) intp).getInnerInterpreter();
 
             interpreterGroup.setAppLoader(
-                new ApplicationLoader(
-                    ((ClassloaderInterpreter) classLoaderInterpreter).getClassloader(),
-                    new DependencyResolver(conf.getLocalRepoDir())));
+                new ApplicationLoader(new DependencyResolver(conf.getLocalRepoDir())));
             interpreterGroup.setResourcePool(new ResourcePool(this));
           }
           interpreterGroup.add(intp);

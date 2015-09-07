@@ -118,13 +118,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
   }
 
   private ApplicationLoader createAppLoader(String localRepo) {
-    // create app loader
-    ClassLoader cl = getClass().getClassLoader();
-    if (cl == null) {
-      cl = ClassLoader.getSystemClassLoader();
-    }
-
-    return new ApplicationLoader(cl, new DependencyResolver(localRepo));
+    return new ApplicationLoader(new DependencyResolver(localRepo));
   }
 
   @Override

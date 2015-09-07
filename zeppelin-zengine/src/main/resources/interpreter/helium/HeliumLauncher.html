@@ -4,12 +4,12 @@
             type="button"
             class="btn btn-default btn-sm"
             tooltip="{{app.name}}"
-            ng-class="{'active': $parent.launcherRun==app.className}"
+            ng-class="{'active': $parent.launcherRun === app.className}"
             ng-click='$parent.launcherRun=app.className'>
-      <i ng-show="$parent.launcherRun!=app.className || launcherShow !== 'loading'"
+      <i ng-show="!($parent.launcherRun === app.className && launcherShow === 'loading')"
          class="{{app.icon}}">
       </i>
-      <i ng-show="$parent.launcherRun==app.className && launcherShow == 'loading'"
+      <i ng-show="$parent.launcherRun === app.className && launcherShow === 'loading'"
          class="fa fa-spinner fa-spin">
       </i>      
     </button>

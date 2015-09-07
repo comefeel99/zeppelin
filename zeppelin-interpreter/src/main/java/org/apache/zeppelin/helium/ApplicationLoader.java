@@ -36,12 +36,10 @@ import org.slf4j.LoggerFactory;
  */
 public class ApplicationLoader {
   Logger logger = LoggerFactory.getLogger(ApplicationLoader.class);
-  private final ClassLoader parentClassLoader;
   private final DependencyResolver resolver;
   private final Map<ApplicationKey, Class<Application>> cached;
 
-  public ApplicationLoader(ClassLoader parentClassLoader, DependencyResolver resolver) {
-    this.parentClassLoader = parentClassLoader;
+  public ApplicationLoader(DependencyResolver resolver) {
     this.resolver = resolver;
     cached = Collections.synchronizedMap(
         new HashMap<ApplicationKey, Class<Application>>());
@@ -67,7 +65,8 @@ public class ApplicationLoader {
       }
     }
     URLClassLoader applicationClassLoader =
-        new URLClassLoader(urlList.toArray(new URL[]{}), parentClassLoader);
+        new URLClassLoader(urlList.toArray(new URL[]{}),
+            Thread.currentThread().getContextClassLoader());
 
     Class<Application> cls =
         (Class<Application>) applicationClassLoader.loadClass(spec.getClassName());
