@@ -240,6 +240,17 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     Interpreter intp = getInterpreter(className);
     InterpreterContext context = convert(interpreterContext);
 
+    // clear previous result
+    Collection<ResourceInfo> previousResult = resourcePool.search(
+        context.getResourcePool().getId(),
+        WellKnownResource.resourceNameBelongsTo(context.getNoteId(), context.getParagraphId()));
+    if (previousResult != null) {
+      for (ResourceInfo info : previousResult) {
+        logger.info("remove previous result {}", info.name());
+        resourcePool.remove(info.name());
+      }
+    }
+
     Scheduler scheduler = intp.getScheduler();
     InterpretJobListener jobListener = new InterpretJobListener();
     InterpretJob job = new InterpretJob(interpreterContext.getParagraphId(),
