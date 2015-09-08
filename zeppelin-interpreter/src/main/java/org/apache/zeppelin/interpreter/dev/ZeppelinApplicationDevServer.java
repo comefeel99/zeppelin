@@ -64,6 +64,7 @@ public class ZeppelinApplicationDevServer {
           }
           try {
             logger.info("Run application " + app.getClass().getName());
+            context.out.setHeader("%angular ");
             app.run(arg, context);
           } catch (IOException e) {
             throw new InterpreterException(e);

@@ -785,7 +785,7 @@ public class RemoteInterpreterServer extends Thread implements RemoteInterpreter
     }
 
     try {
-      return new ApplicationResult(0, new String(context.out.toByteArray()));
+      return new ApplicationResult(0, new String(context.out.toByteArray(true)));
     } catch (IOException e) {
       logger.error("Error on run application " + classname, e);
       return new ApplicationResult(1, e.getMessage());
