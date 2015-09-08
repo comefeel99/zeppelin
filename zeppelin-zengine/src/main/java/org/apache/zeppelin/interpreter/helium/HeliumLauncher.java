@@ -110,11 +110,31 @@ public class HeliumLauncher extends Application {
           context.getNoteId(), previousParagraphId));
     }
 
-
+    // selected application
     String applicationToRun = (String) get(context, APP_TO_RUN);
     logger.info("Application to run {}", applicationToRun);
-    LinkedList<ApplicationSpec> availableApps;
-    if (applicationToRun == null || applicationToRun.isEmpty()) {  // show launcher
+
+    // get available apps
+    boolean currentApplicationFound = false;
+    LinkedList<ApplicationSpec> availableApps = new LinkedList<ApplicationSpec>();
+    for (ResourceInfo resource : searchResult) {
+      Collection<ApplicationSpec> apps = helium.getAllApplicationsForResource(resource.name());
+      if (apps == null || apps.isEmpty()) {
+        continue;
+      }
+
+      for (ApplicationSpec app : apps) {
+        if (!availableApps.contains(app)) {
+          availableApps.add(app);
+          if (applicationToRun != null && app.getClassName().equals(applicationToRun)) {
+            currentApplicationFound = true;
+          }
+        }
+      }
+    }
+
+    // show launcher
+    if (!currentApplicationFound || applicationToRun == null || applicationToRun.isEmpty()) {
       availableApps = new LinkedList<ApplicationSpec>();
       for (ResourceInfo resource : searchResult) {
         Collection<ApplicationSpec> apps = helium.getAllApplicationsForResource(resource.name());
