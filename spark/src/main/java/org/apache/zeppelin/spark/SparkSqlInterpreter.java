@@ -104,13 +104,7 @@ public class SparkSqlInterpreter extends Interpreter {
   @Override
   public void close() {}
 
-  private void exposeSparkSqlContext(InterpreterContext context, SQLContext sqlc) {
-    context.getResourcePool().put(
-        WellKnownResource.SPARK_SQLCONTEXT.resourceName(
-            WellKnownResource.SPARK_SQLCONTEXT.type(),
-            WellKnownResource.INSTANCE_RESULT,
-            context.getNoteId(), context.getParagraphId()), sqlc);
-  }
+
 
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
@@ -120,11 +114,10 @@ public class SparkSqlInterpreter extends Interpreter {
     }
 
     SQLContext sqlc = null;
-
     sqlc = sparkInterpreter.getSQLContext();
-    exposeSparkSqlContext(context, sqlc);
-
     SparkContext sc = sqlc.sparkContext();
+    SparkInterpreter.exposeSparkContext(context, sc, sqlc);
+
     if (concurrentSQL()) {
       sc.setLocalProperty("spark.scheduler.pool", "fair");
     } else {

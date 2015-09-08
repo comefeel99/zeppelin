@@ -626,7 +626,7 @@ public class SparkInterpreter extends Interpreter {
       return new InterpreterResult(Code.ERROR, sparkConfValidator.getError());
     }
 
-    exposeSparkContext(context, sc);
+    exposeSparkContext(context, sc, sqlc);
 
     z.setInterpreterContext(context);
     if (line == null || line.trim().length() == 0) {
@@ -846,12 +846,18 @@ public class SparkInterpreter extends Interpreter {
     }
   }
 
-  private void exposeSparkContext(InterpreterContext context, SparkContext sc) {
+  static void exposeSparkContext(InterpreterContext context, SparkContext sc, SQLContext sqlc) {
     context.getResourcePool().put(
         WellKnownResource.SPARK_CONTEXT.resourceName(
             WellKnownResource.SPARK_CONTEXT.type(),
             WellKnownResource.INSTANCE_RESULT,
             context.getNoteId(), context.getParagraphId()), sc);
+
+    context.getResourcePool().put(
+        WellKnownResource.SPARK_SQLCONTEXT.resourceName(
+            WellKnownResource.SPARK_SQLCONTEXT.type(),
+            WellKnownResource.INSTANCE_RESULT,
+            context.getNoteId(), context.getParagraphId()), sqlc);
   }
 
   @Override
