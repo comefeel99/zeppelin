@@ -39,6 +39,8 @@ import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.remote.InterpreterConnectionFactory;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -50,6 +52,8 @@ import com.google.gson.reflect.TypeToken;
  * They can reference each other
  */
 public class ResourcePool {
+  Logger logger = LoggerFactory.getLogger(ResourcePool.class);
+
   Map<ResourceInfo, Object> localPool;
   static final String LOCATION_ANY = "*";
   static final String NAME_ANY = "*";
@@ -71,6 +75,7 @@ public class ResourcePool {
   }
 
   public void put(String name, Object o) {
+    logger.info("Put {} {}", name, (o == null) ? "null" : o.getClass().getName());
     ResourceInfo info = new ResourceInfo(id, name, o);
     synchronized (localPool) {
       localPool.put(info, o);
@@ -92,6 +97,7 @@ public class ResourcePool {
   }
 
   public Object get(String resourcePoolId, String name) {
+    logger.info("Get {} {}", resourcePoolId, name);
     if (resourcePoolId.equals(id)) { // get locally
       synchronized (localPool) {
         return localPool.get(resourceInfoFromName(name));
@@ -112,6 +118,7 @@ public class ResourcePool {
     return search(LOCATION_ANY, namePattern);
   }
   public Collection<ResourceInfo> search(String resourcePoolId, String namePattern) {
+    logger.info("Search {} {}", resourcePoolId, namePattern);
     List<ResourceInfo> info = new LinkedList<ResourceInfo>();
     if (resourcePoolId.equals(id)) { // search locally
       for (ResourceInfo r :localPool.keySet()) {
@@ -141,6 +148,7 @@ public class ResourcePool {
   }
 
   public void remove(String name) {
+    logger.info("Remove {}", name);
     synchronized (localPool) {
       localPool.remove(resourceInfoFromName(name));
     }

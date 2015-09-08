@@ -43,6 +43,10 @@ import org.apache.zeppelin.display.Input.ParamOption;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterException;
+import org.apache.zeppelin.interpreter.data.TableData;
+import org.apache.zeppelin.resource.ResourceInfo;
+import org.apache.zeppelin.resource.ResourcePool;
+import org.apache.zeppelin.resource.WellKnownResource;
 import org.apache.zeppelin.spark.dep.DependencyResolver;
 
 import scala.Tuple2;
@@ -751,5 +755,56 @@ public class ZeppelinContext extends HashMap<String, Object> {
   private void angularUnbind(String name, String noteId) {
     AngularObjectRegistry registry = interpreterContext.getAngularObjectRegistry();
     registry.remove(name, noteId, null);
+  }
+
+
+  /**
+   * Get table result from previous paragraph
+   * @return
+   */
+  public TableData getLastTableResult() {
+    String previousParagraphId = getPreviousParagraphId(interpreterContext);
+    if (previousParagraphId == null) {
+      return null;
+    }
+
+    ResourcePool pool = interpreterContext.getResourcePool();
+
+    String name = WellKnownResource.resourceName(
+        WellKnownResource.TABLE_DATA,
+        WellKnownResource.INSTANCE_RESULT,
+        interpreterContext.getNoteId(), previousParagraphId);
+
+    Collection<ResourceInfo> res = pool.search(name);
+    if (res.isEmpty()) {
+      return null;
+    }
+
+    ResourceInfo info = res.iterator().next();
+
+    TableData tableData = (TableData) interpreterContext.getResourcePool().get(
+        info.location(), info.name());
+
+    return tableData;
+  }
+
+  private String getPreviousParagraphId(InterpreterContext context) {
+    InterpreterContextRunner previousParagraphRunner = null;
+
+    List<InterpreterContextRunner> runners = context.getRunners();
+    for (int i = 0; i < runners.size(); i++) {
+      if (runners.get(i).getParagraphId().equals(context.getParagraphId())) {
+        if (i > 0) {
+          previousParagraphRunner = runners.get(i - 1);
+        }
+        break;
+      }
+    }
+
+    if (previousParagraphRunner == null) {
+      return null;
+    }
+
+    return previousParagraphRunner.getParagraphId();
   }
 }
