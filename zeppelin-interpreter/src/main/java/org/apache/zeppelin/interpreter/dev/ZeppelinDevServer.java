@@ -41,7 +41,7 @@ public class ZeppelinDevServer extends
 
   DevInterpreter interpreter = null;
   private InterpreterEvent listener;
-
+  InterpreterOutput out;
   public ZeppelinDevServer(int port, String localDependencyRepo,
       InterpreterEvent listener) throws TException {
     super(port, localDependencyRepo);
@@ -70,11 +70,16 @@ public class ZeppelinDevServer extends
 
   @Override
   protected InterpreterOutput createInterpreterOutput() {
-    try {
-      return new InterpreterOutput(this);
-    } catch (IOException e) {
-      return null;
+    if (out == null) {
+      try {
+        out = new InterpreterOutput(this);
+      } catch (IOException e) {
+        return null;
+      }
     }
+
+    out.clear();
+    return out;
   }
 
   @Override
