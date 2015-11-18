@@ -23,14 +23,14 @@ limitations under the License.
 
 The Apache Zeppelin (incubating) community is pleased to announce the availability of the 0.5.5-incubating release.
 The community put sigificant effort into improving Apache Zeppelin since the last release, focusing on having
-new backend support, improvements on stability and simplifying the configuratin. About 60 contributors provided new features,
-improvements and verifying release. Total 94 issues has been resolved.
+new backend support, improvements on stability and simplifying the configuratin. More than 60 contributors provided new features,
+improvements and verifying release. More than 90 issues has been resolved.
 
-We encourage [download](../../download.html) the latest release and feedback through the [mailing lists](../../community.html) is very welcome.
+We encourage [download](../../download.html) the latest release. Feedback through the [mailing lists](../../community.html) is very welcome.
 
 <br />
 
-#### Backend support
+### Backend support
 
 This release includes new backend support for
 
@@ -42,19 +42,36 @@ This release includes new backend support for
 
 
 <br />
-#### Spark integration
+### Spark integration
 
 Until last release, Zeppelin need to be built for specific version of Spark (and Hadoop).
 From this release, a single binary package can be used for any Spark (and Hadoop) version without rebuild.
 
-Configuration is also simplified. Regardless of Spark deployment type (Standalone / Yarn / Mesos), two simple steps,
+Configuration is simplified to two steps. Regardless of Spark deployment type (Standalone / Yarn / Mesos),
 
  * `export SPARK_HOME=`  in *conf/zeppelin-env.sh*
  * set `master` property in GUI (interpreter menu)
 
 
+
 <br />
-#### Improvements and Bug fixes
+### REST Api and Websocket Secutity
+
+Zeppelin REST Api and Websocket server can be secured from Cross Origin Request problem by setting `zeppelin.server.allowed.origins` property in zeppelin-site.xml
+
+
+
+<br />
+### Improvements
+
+Some notable improvements are
+
+ * [[ZEPPELIN-210]](https://issues.apache.org/jira/browse/ZEPPELIN-210) - User specified notebook as a homescreen
+ * [[ZEPPELIN-126]](https://issues.apache.org/jira/browse/ZEPPELIN-126) - create notebook based on existing notebook
+ * [[ZEPPELIN-74]](https://issues.apache.org/jira/browse/ZEPPELIN-74) - Change interpreter selection from %[Name] to %[Group].[Name]
+ * [[ZEPPELIN-133]](https://issues.apache.org/jira/browse/ZEPPELIN-133) - Ability to sync notebooks from local to other storage systems
+ * [[ZEPPELIN-333]](https://issues.apache.org/jira/browse/ZEPPELIN-333) - Add notebook REST API for create, delete and clone operations
+
 
 You can visit [issue tracker](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12316221&version=12333531) for full list of issues being resolved.
 
@@ -147,6 +164,3 @@ The following people helped verifying this release:
 * Vinay Shukla
 * Zhong Jian
 
-
-
-Thanks to everyone who made this release possible!
