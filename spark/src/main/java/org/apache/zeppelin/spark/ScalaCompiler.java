@@ -29,7 +29,8 @@ import org.apache.spark.repl.SparkIMain;
 import org.apache.spark.repl.SparkJLineCompletion;
 import org.apache.spark.sql.SQLContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
-import org.apache.zeppelin.spark.dep.DependencyResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import scala.None;
 import scala.Some;
@@ -39,6 +40,8 @@ import scala.tools.nsc.Settings;
  * Scala compiler instance
  */
 public class ScalaCompiler {
+  Logger logger = LoggerFactory.getLogger(ScalaCompiler.class);
+
   private SparkILoop interpreter;
   private SparkIMain intp;
   private ByteArrayOutputStream out;
@@ -48,7 +51,6 @@ public class ScalaCompiler {
   private ZeppelinContext z;
   private boolean initialized = false;
   private Settings settings;
-  private DependencyResolver dep;
   private SparkContext sc;
   private SQLContext sqlc;
 
@@ -71,6 +73,7 @@ public class ScalaCompiler {
     completor = new SparkJLineCompletion(intp);
     z = new ZeppelinContext(sc, sqlc, null, printStream, maxResult);
 
+    logger.info("use classOutputDirectory {}", intp.getClassOutputDirectory());
   }
 
   public boolean isInitialized() {
@@ -79,7 +82,6 @@ public class ScalaCompiler {
 
   public void init() {
     SparkVersion sparkVersion = SparkVersion.fromVersionString(sc.version());
-
 
     intp.interpret("@transient var _binder = new java.util.HashMap[String, Object]()");
     binder = (Map<String, Object>) getValue("_binder");
@@ -105,7 +107,6 @@ public class ScalaCompiler {
       intp.interpret("import sqlContext.sql");
       intp.interpret("import org.apache.spark.sql.functions._");
     }
-
 
     /* Temporary disabling DisplayUtils. see https://issues.apache.org/jira/browse/ZEPPELIN-127
      *

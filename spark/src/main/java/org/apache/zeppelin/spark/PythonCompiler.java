@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Python compiler instance
+ * Python compiler
  */
 public class PythonCompiler implements ExecuteResultHandler {
   Logger logger = LoggerFactory.getLogger(PythonCompiler.class);

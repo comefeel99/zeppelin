@@ -19,8 +19,6 @@ package org.apache.zeppelin.spark;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,11 +35,9 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.repl.SparkCommandLine;
 import org.apache.spark.repl.SparkILoop;
 import org.apache.spark.repl.SparkIMain;
-import org.apache.spark.repl.SparkJLineCompletion;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.DAGScheduler;
 import org.apache.spark.scheduler.Pool;
-import org.apache.spark.scheduler.SparkListener;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.ui.jobs.JobProgressListener;
 import org.apache.zeppelin.interpreter.Interpreter;
@@ -56,7 +52,6 @@ import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.spark.dep.DependencyContext;
-import org.apache.zeppelin.spark.dep.DependencyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,6 +116,8 @@ public class SparkInterpreter extends Interpreter {
 
   private SparkEnv env;
   private SparkVersion sparkVersion;
+
+  private String classDir;
 
 
   public SparkInterpreter(Properties property) {
@@ -237,6 +234,7 @@ public class SparkInterpreter extends Interpreter {
     synchronized (scalaCompilers) {
       if (!scalaCompilers.containsKey(compilerId)) {
         Settings settings = createSettings();
+
         ScalaCompiler compiler = new ScalaCompiler(settings,
             sc, sqlc,
             Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
@@ -465,7 +463,6 @@ public class SparkInterpreter extends Interpreter {
 
   @Override
   public void open() {
-
     sc = getSparkContext();
     if (sc.getPoolForName("fair").isEmpty()) {
       Value schedulingMode = org.apache.spark.scheduler.SchedulingMode.FAIR();
