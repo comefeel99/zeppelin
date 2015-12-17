@@ -62,7 +62,6 @@ import org.slf4j.LoggerFactory;
 
 import scala.Console;
 import scala.Enumeration.Value;
-import scala.None;
 import scala.Some;
 import scala.Tuple2;
 import scala.collection.Iterator;
@@ -72,8 +71,6 @@ import scala.collection.Seq;
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 import scala.tools.nsc.Settings;
-import scala.tools.nsc.interpreter.Completion.Candidates;
-import scala.tools.nsc.interpreter.Completion.ScalaCompleter;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
 
@@ -224,7 +221,7 @@ public class SparkInterpreter extends Interpreter {
     return sqlc;
   }
 
-  private String getScalaCompilerId(InterpreterContext context) {
+  String getScalaCompilerId(InterpreterContext context) {
     if (context == null || isCompilerShared()) {
       return "shared";
     } else {
@@ -232,12 +229,17 @@ public class SparkInterpreter extends Interpreter {
     }
   }
 
-  private ScalaCompiler createOrGetScalaCompiler(InterpreterContext context) {
-    String compilerId = getScalaCompilerId(context);
+  ScalaCompiler createOrGetScalaCompiler(InterpreterContext context) {
+    return createOrGetScalaCompiler(getScalaCompilerId(context));
+  }
+
+  ScalaCompiler createOrGetScalaCompiler(String compilerId) {
     synchronized (scalaCompilers) {
       if (!scalaCompilers.containsKey(compilerId)) {
         Settings settings = createSettings();
-        ScalaCompiler compiler = new ScalaCompiler(settings);
+        ScalaCompiler compiler = new ScalaCompiler(settings,
+            sc, sqlc,
+            Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
         scalaCompilers.put(compilerId, compiler);
       }
       return scalaCompilers.get(compilerId);
@@ -268,7 +270,7 @@ public class SparkInterpreter extends Interpreter {
     String[] jars = SparkILoop.getAddedJars();
 
     String classServerUri = null;
-    ScalaCompiler scalaCompiler = createOrGetScalaCompiler(null);
+    ScalaCompiler scalaCompiler = createOrGetScalaCompiler((InterpreterContext) null);
 
     try { // in case of spark 1.1x, spark 1.2x
       Method classServer = scalaCompiler.getIntp().getClass().getMethod("classServer");
@@ -611,10 +613,7 @@ public class SparkInterpreter extends Interpreter {
   public InterpreterResult interpret(String[] lines, InterpreterContext context) {
     ScalaCompiler scalaCompiler = createOrGetScalaCompiler(context);
     if (!scalaCompiler.isInitialized()) {
-      scalaCompiler.init(sc, sqlc,
-          Integer.parseInt(getProperty("zeppelin.spark.maxResult")),
-          getProperty("zeppelin.dep.localrepo"),
-          getProperty("zeppelin.dep.additionalRemoteRepository"));
+      scalaCompiler.init();
     }
 
     synchronized (scalaCompiler) {
@@ -843,10 +842,6 @@ public class SparkInterpreter extends Interpreter {
   public Scheduler getScheduler() {
     return SchedulerFactory.singleton().createOrGetFIFOScheduler(
       SparkInterpreter.class.getName() + this.hashCode());
-  }
-
-  public ZeppelinContext getZeppelinContext() {
-    return null;
   }
 
   public SparkVersion getSparkVersion() {

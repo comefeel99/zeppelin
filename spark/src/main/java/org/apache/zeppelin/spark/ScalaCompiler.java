@@ -49,9 +49,16 @@ public class ScalaCompiler {
   private boolean initialized = false;
   private Settings settings;
   private DependencyResolver dep;
+  private SparkContext sc;
+  private SQLContext sqlc;
 
-  public ScalaCompiler(Settings settings) {
+  public ScalaCompiler(Settings settings,
+      SparkContext sc,
+      SQLContext sqlc,
+      int maxResult) {
     this.settings = settings;
+    this.sc = sc;
+    this.sqlc = sqlc;
 
     out = new ByteArrayOutputStream();
     printStream = new PrintStream(out);
@@ -62,21 +69,17 @@ public class ScalaCompiler {
     intp.setContextClassLoader();
     intp.initializeSynchronous();
     completor = new SparkJLineCompletion(intp);
+    z = new ZeppelinContext(sc, sqlc, null, printStream, maxResult);
+
   }
 
   public boolean isInitialized() {
     return initialized;
   }
 
-  public void init(SparkContext sc,
-      SQLContext sqlc,
-      int maxResult,
-      String localRepoPath,
-      String additionalRemoteRepository) {
+  public void init() {
     SparkVersion sparkVersion = SparkVersion.fromVersionString(sc.version());
-    dep = new DependencyResolver(intp, sc, localRepoPath, additionalRemoteRepository);
 
-    z = new ZeppelinContext(sc, sqlc, null, dep, printStream, maxResult);
 
     intp.interpret("@transient var _binder = new java.util.HashMap[String, Object]()");
     binder = (Map<String, Object>) getValue("_binder");

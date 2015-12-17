@@ -114,6 +114,7 @@ sys.stderr = output
 
 client = GatewayClient(port=int(sys.argv[1]))
 sparkVersion = SparkVersion(int(sys.argv[2]))
+compilerId = sys.argv[3]
 
 if sparkVersion.isAutoConvertEnabled():
   gateway = JavaGateway(client, auto_convert = True)
@@ -127,7 +128,7 @@ java_import(gateway.jvm, "org.apache.spark.api.python.*")
 java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
 
 intp = gateway.entry_point
-intp.onPythonScriptInitialized()
+intp.onPythonScriptInitialized(compilerId)
 
 jsc = intp.getJavaSparkContext()
 
@@ -149,10 +150,10 @@ sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
 sqlc = SQLContext(sc, intp.getSQLContext())
 sqlContext = sqlc
 
-z = PyZeppelinContext(intp.getZeppelinContext())
+z = PyZeppelinContext(intp.getZeppelinContext(compilerId))
 
 while True :
-  req = intp.getStatements()
+  req = intp.getStatements(compilerId)
   try:
     stmts = req.statements().split("\n")
     jobGroup = req.jobGroup()
@@ -177,14 +178,14 @@ while True :
       sc.setJobGroup(jobGroup, "Zeppelin")
       eval(compiledCode)
 
-    intp.setStatementsFinished(output.get(), False)
+    intp.setStatementsFinished(compilerId, output.get(), False)
   except Py4JJavaError:
     excInnerError = traceback.format_exc() # format_tb() does not return the inner exception
     innerErrorStart = excInnerError.find("Py4JJavaError:")
     if innerErrorStart > -1:
        excInnerError = excInnerError[innerErrorStart:]
-    intp.setStatementsFinished(excInnerError + str(sys.exc_info()), True)
+    intp.setStatementsFinished(compilerId, excInnerError + str(sys.exc_info()), True)
   except:
-    intp.setStatementsFinished(traceback.format_exc(), True)
+    intp.setStatementsFinished(compilerId, traceback.format_exc(), True)
 
   output.reset()
