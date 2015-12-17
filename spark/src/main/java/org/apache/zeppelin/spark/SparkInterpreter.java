@@ -107,29 +107,27 @@ public class SparkInterpreter extends Interpreter {
             .add("zeppelin.spark.maxResult",
                 getSystemDefault("ZEPPELIN_SPARK_MAXRESULT", "zeppelin.spark.maxResult", "1000"),
                 "Max number of SparkSQL result to display.")
+            .add("zeppelin.spark.shareCompiler",
+                getSystemDefault("ZEPPELIN_SPARK_SHARECOMPILER",
+                    "zeppelin.spark.shareCompiler", "true"),
+                "Share single scala/python compiler across all notebook.")
             .add("args", "", "spark commandline args").build());
 
   }
 
-  private ZeppelinContext z;
-  private SparkILoop interpreter;
-  private SparkIMain intp;
+  Map<String, ScalaCompiler> scalaCompilers = new java.util.HashMap<String, ScalaCompiler>();
+
   private SparkContext sc;
-  private ByteArrayOutputStream out;
   private SQLContext sqlc;
-  private DependencyResolver dep;
-  private SparkJLineCompletion completor;
 
   private JobProgressListener sparkListener;
 
-  private Map<String, Object> binder;
   private SparkEnv env;
   private SparkVersion sparkVersion;
 
 
   public SparkInterpreter(Properties property) {
     super(property);
-    out = new ByteArrayOutputStream();
   }
 
   public SparkInterpreter(Properties property, SparkContext sc) {
@@ -196,6 +194,10 @@ public class SparkInterpreter extends Interpreter {
     return Boolean.parseBoolean(getProperty("zeppelin.spark.useHiveContext"));
   }
 
+  private boolean isCompilerShared() {
+    return Boolean.parseBoolean(getProperty("zeppelin.spark.shareCompiler"));
+  }
+
   public SQLContext getSQLContext() {
     if (sqlc == null) {
       if (useHiveContext()) {
@@ -222,14 +224,24 @@ public class SparkInterpreter extends Interpreter {
     return sqlc;
   }
 
-  public DependencyResolver getDependencyResolver() {
-    if (dep == null) {
-      dep = new DependencyResolver(intp,
-                                   sc,
-                                   getProperty("zeppelin.dep.localrepo"),
-                                   getProperty("zeppelin.dep.additionalRemoteRepository"));
+  private String getScalaCompilerId(InterpreterContext context) {
+    if (context == null || isCompilerShared()) {
+      return "shared";
+    } else {
+      return context.getNoteId();
     }
-    return dep;
+  }
+
+  private ScalaCompiler createOrGetScalaCompiler(InterpreterContext context) {
+    String compilerId = getScalaCompilerId(context);
+    synchronized (scalaCompilers) {
+      if (!scalaCompilers.containsKey(compilerId)) {
+        Settings settings = createSettings();
+        ScalaCompiler compiler = new ScalaCompiler(settings);
+        scalaCompilers.put(compilerId, compiler);
+      }
+      return scalaCompilers.get(compilerId);
+    }
   }
 
   private DepInterpreter getDepInterpreter() {
@@ -256,10 +268,11 @@ public class SparkInterpreter extends Interpreter {
     String[] jars = SparkILoop.getAddedJars();
 
     String classServerUri = null;
+    ScalaCompiler scalaCompiler = createOrGetScalaCompiler(null);
 
     try { // in case of spark 1.1x, spark 1.2x
-      Method classServer = interpreter.intp().getClass().getMethod("classServer");
-      HttpServer httpServer = (HttpServer) classServer.invoke(interpreter.intp());
+      Method classServer = scalaCompiler.getIntp().getClass().getMethod("classServer");
+      HttpServer httpServer = (HttpServer) classServer.invoke(scalaCompiler.getIntp());
       classServerUri = httpServer.uri();
     } catch (NoSuchMethodException | SecurityException | IllegalAccessException
         | IllegalArgumentException | InvocationTargetException e) {
@@ -268,8 +281,8 @@ public class SparkInterpreter extends Interpreter {
 
     if (classServerUri == null) {
       try { // for spark 1.3x
-        Method classServer = interpreter.intp().getClass().getMethod("classServerUri");
-        classServerUri = (String) classServer.invoke(interpreter.intp());
+        Method classServer = scalaCompiler.getIntp().getClass().getMethod("classServerUri");
+        classServerUri = (String) classServer.invoke(scalaCompiler.getIntp());
       } catch (NoSuchMethodException | SecurityException | IllegalAccessException
           | IllegalArgumentException | InvocationTargetException e) {
         throw new InterpreterException(e);
@@ -368,8 +381,7 @@ public class SparkInterpreter extends Interpreter {
     return defaultValue;
   }
 
-  @Override
-  public void open() {
+  private Settings createSettings() {
     URL[] urls = getClassloaderUrls();
 
     // Very nice discussion about how scala compiler handle classpath
@@ -446,20 +458,11 @@ public class SparkInterpreter extends Interpreter {
     BooleanSetting b = (BooleanSetting) settings.usejavacp();
     b.v_$eq(true);
     settings.scala$tools$nsc$settings$StandardScalaSettings$_setter_$usejavacp_$eq(b);
+    return settings;
+  }
 
-    PrintStream printStream = new PrintStream(out);
-
-    /* spark interpreter */
-    this.interpreter = new SparkILoop(null, new PrintWriter(out));
-    interpreter.settings_$eq(settings);
-
-    interpreter.createInterpreter();
-
-    intp = interpreter.intp();
-    intp.setContextClassLoader();
-    intp.initializeSynchronous();
-
-    completor = new SparkJLineCompletion(intp);
+  @Override
+  public void open() {
 
     sc = getSparkContext();
     if (sc.getPoolForName("fair").isEmpty()) {
@@ -474,60 +477,8 @@ public class SparkInterpreter extends Interpreter {
 
     sqlc = getSQLContext();
 
-    dep = getDependencyResolver();
 
-    z = new ZeppelinContext(sc, sqlc, null, dep, printStream,
-        Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
-
-    intp.interpret("@transient var _binder = new java.util.HashMap[String, Object]()");
-    binder = (Map<String, Object>) getValue("_binder");
-    binder.put("sc", sc);
-    binder.put("sqlc", sqlc);
-    binder.put("z", z);
-    binder.put("out", printStream);
-
-    intp.interpret("@transient val z = "
-                 + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.spark.ZeppelinContext]");
-    intp.interpret("@transient val sc = "
-                 + "_binder.get(\"sc\").asInstanceOf[org.apache.spark.SparkContext]");
-    intp.interpret("@transient val sqlc = "
-                 + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
-    intp.interpret("@transient val sqlContext = "
-                 + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
-    intp.interpret("import org.apache.spark.SparkContext._");
-
-    if (sparkVersion.oldSqlContextImplicits()) {
-      intp.interpret("import sqlContext._");
-    } else {
-      intp.interpret("import sqlContext.implicits._");
-      intp.interpret("import sqlContext.sql");
-      intp.interpret("import org.apache.spark.sql.functions._");
-    }
-
-    /* Temporary disabling DisplayUtils. see https://issues.apache.org/jira/browse/ZEPPELIN-127
-     *
-    // Utility functions for display
-    intp.interpret("import org.apache.zeppelin.spark.utils.DisplayUtils._");
-
-    // Scala implicit value for spark.maxResult
-    intp.interpret("import org.apache.zeppelin.spark.utils.SparkMaxResult");
-    intp.interpret("implicit val sparkMaxResult = new SparkMaxResult(" +
-            Integer.parseInt(getProperty("zeppelin.spark.maxResult")) + ")");
-     */
-
-    try {
-      if (sparkVersion.oldLoadFilesMethodName()) {
-        Method loadFiles = this.interpreter.getClass().getMethod("loadFiles", Settings.class);
-        loadFiles.invoke(this.interpreter, settings);
-      } else {
-        Method loadFiles = this.interpreter.getClass().getMethod(
-                "org$apache$spark$repl$SparkILoop$$loadFiles", Settings.class);
-        loadFiles.invoke(this.interpreter, settings);
-      }
-    } catch (NoSuchMethodException | SecurityException | IllegalAccessException
-            | IllegalArgumentException | InvocationTargetException e) {
-      throw new InterpreterException(e);
-    }
+    DepInterpreter depInterpreter = getDepInterpreter();
 
     // add jar
     if (depInterpreter != null) {
@@ -580,6 +531,7 @@ public class SparkInterpreter extends Interpreter {
 
   @Override
   public List<String> completion(String buf, int cursor) {
+    /*
     if (buf.length() < cursor) {
       cursor = buf.length();
     }
@@ -591,6 +543,8 @@ public class SparkInterpreter extends Interpreter {
     ScalaCompleter c = completor.completer();
     Candidates ret = c.complete(completionText, cursor);
     return scala.collection.JavaConversions.asJavaList(ret.candidates());
+    */
+    return new LinkedList<String>();
   }
 
   private String getCompletionTargetString(String text, int cursor) {
@@ -634,17 +588,6 @@ public class SparkInterpreter extends Interpreter {
     return resultCompletionText;
   }
 
-  public Object getValue(String name) {
-    Object ret = intp.valueOfTerm(name);
-    if (ret instanceof None) {
-      return null;
-    } else if (ret instanceof Some) {
-      return ((Some) ret).get();
-    } else {
-      return ret;
-    }
-  }
-
   String getJobGroup(InterpreterContext context){
     return "zeppelin-" + context.getParagraphId();
   }
@@ -659,7 +602,6 @@ public class SparkInterpreter extends Interpreter {
           + " is not supported");
     }
 
-    z.setInterpreterContext(context);
     if (line == null || line.trim().length() == 0) {
       return new InterpreterResult(Code.SUCCESS);
     }
@@ -667,16 +609,30 @@ public class SparkInterpreter extends Interpreter {
   }
 
   public InterpreterResult interpret(String[] lines, InterpreterContext context) {
-    synchronized (this) {
+    ScalaCompiler scalaCompiler = createOrGetScalaCompiler(context);
+    if (!scalaCompiler.isInitialized()) {
+      scalaCompiler.init(sc, sqlc,
+          Integer.parseInt(getProperty("zeppelin.spark.maxResult")),
+          getProperty("zeppelin.dep.localrepo"),
+          getProperty("zeppelin.dep.additionalRemoteRepository"));
+    }
+
+    synchronized (scalaCompiler) {
+      ZeppelinContext z = scalaCompiler.getZeppelinContext();
+      z.setInterpreterContext(context);
       z.setGui(context.getGui());
       sc.setJobGroup(getJobGroup(context), "Zeppelin", false);
-      InterpreterResult r = interpretInput(lines);
+      InterpreterResult r = interpretInput(lines, scalaCompiler);
       sc.clearJobGroup();
       return r;
     }
   }
 
-  public InterpreterResult interpretInput(String[] lines) {
+  public InterpreterResult interpretInput(String[] lines, ScalaCompiler scalaCompiler) {
+    Map<String, Object> binder = scalaCompiler.getBinder();
+    ByteArrayOutputStream out = scalaCompiler.getOut();
+    SparkIMain intp = scalaCompiler.getIntp();
+
     SparkEnv.set(env);
 
     // add print("") to make sure not finishing with comment
@@ -865,7 +821,13 @@ public class SparkInterpreter extends Interpreter {
     sc.stop();
     sc = null;
 
-    intp.close();
+    synchronized (scalaCompilers) {
+      for (ScalaCompiler c : scalaCompilers.values()) {
+        c.getIntp().close();
+      }
+
+      scalaCompilers.clear();
+    }
   }
 
   @Override
@@ -884,7 +846,7 @@ public class SparkInterpreter extends Interpreter {
   }
 
   public ZeppelinContext getZeppelinContext() {
-    return z;
+    return null;
   }
 
   public SparkVersion getSparkVersion() {
