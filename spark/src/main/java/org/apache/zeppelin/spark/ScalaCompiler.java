@@ -48,6 +48,7 @@ public class ScalaCompiler {
   private SparkJLineCompletion completor;
   private Map<String, Object> binder;
   private PrintStream printStream;
+  private PrintWriter printWriter;
   private ZeppelinContext z;
   private boolean initialized = false;
   private Settings settings;
@@ -64,7 +65,8 @@ public class ScalaCompiler {
 
     out = new ByteArrayOutputStream();
     printStream = new PrintStream(out);
-    interpreter = new SparkILoop(null, new PrintWriter(out));
+    printWriter = new PrintWriter(out);
+    interpreter = new SparkILoop(null, printWriter);
     interpreter.settings_$eq(settings);
     interpreter.createInterpreter();
     intp = interpreter.intp();
@@ -160,6 +162,8 @@ public class ScalaCompiler {
   public PrintStream getPrintStream() {
     return printStream;
   }
+
+  public PrintWriter getPrintWriter() { return printWriter; }
 
   private Object getValue(String name) {
     Object ret = intp.valueOfTerm(name);

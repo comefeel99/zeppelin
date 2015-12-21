@@ -44,6 +44,7 @@ public class SparkInterpreterTest {
   public static SparkInterpreter repl;
   private InterpreterContext context;
   private File tmpDir;
+  private InterpreterGroup intpGroup;
 
 
   /**
@@ -64,17 +65,16 @@ public class SparkInterpreterTest {
   public void setUp() throws Exception {
     tmpDir = new File(System.getProperty("java.io.tmpdir") + "/ZeppelinLTest_" + System.currentTimeMillis());
     System.setProperty("zeppelin.dep.localrepo", tmpDir.getAbsolutePath() + "/local-repo");
-
     tmpDir.mkdirs();
 
     if (repl == null) {
       Properties p = new Properties();
-
+      p.put("zeppelin.spark.shareCompiler", "false");
       repl = new SparkInterpreter(p);
       repl.open();
     }
 
-    InterpreterGroup intpGroup = new InterpreterGroup();
+    intpGroup = new InterpreterGroup();
     context = new InterpreterContext("note", "id", "title", "text",
         new HashMap<String, Object>(), new GUI(), new AngularObjectRegistry(
             intpGroup.getId(), null),
@@ -182,5 +182,21 @@ public class SparkInterpreterTest {
         assertTrue(String.format("configuration starting from 'spark.' should not be empty. [%s]", key), !sparkConf.contains(key) || !sparkConf.get(key).isEmpty());
       }
     }
+  }
+
+  @Test
+  public void muiltipleCompilerInstance() {
+    InterpreterContext context2 = new InterpreterContext("note2", "id", "title", "text",
+            new HashMap<String, Object>(), new GUI(), new AngularObjectRegistry(
+            intpGroup.getId(), null),
+            new LinkedList<InterpreterContextRunner>());
+
+    repl.interpret("val a=\"hello\"", context);
+    repl.interpret("val a=\"world\"", context2);
+
+    System.err.println(repl.interpret("a", context).message());
+    System.err.println(repl.interpret("a", context2).message());
+    assertTrue(repl.interpret("a", context).message().endsWith("hello\n"));
+    assertTrue(repl.interpret("a", context2).message().endsWith("world\n"));
   }
 }

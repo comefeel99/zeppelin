@@ -19,6 +19,8 @@ package org.apache.zeppelin.spark;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -84,8 +86,8 @@ public class SparkInterpreter extends Interpreter {
         new InterpreterPropertyBuilder()
             .add("spark.app.name", "Zeppelin", "The name of spark application.")
             .add("master",
-                getSystemDefault("MASTER", "spark.master", "local[*]"),
-                "Spark master uri. ex) spark://masterhost:7077")
+                    getSystemDefault("MASTER", "spark.master", "local[*]"),
+                    "Spark master uri. ex) spark://masterhost:7077")
             .add("spark.executor.memory",
                 getSystemDefault(null, "spark.executor.memory", "512m"),
                 "Executor memory per worker instance. ex) 512m, 32g")
@@ -118,6 +120,8 @@ public class SparkInterpreter extends Interpreter {
   private SparkVersion sparkVersion;
 
   private String classDir;
+  private ByteArrayOutputStream out;
+  private PrintStream printStream;
 
 
   public SparkInterpreter(Properties property) {
@@ -497,6 +501,9 @@ public class SparkInterpreter extends Interpreter {
         }
       }
     }
+
+    out = new ByteArrayOutputStream();
+    printStream = new PrintStream(out);
   }
 
   private List<File> currentClassPath() {
@@ -639,8 +646,11 @@ public class SparkInterpreter extends Interpreter {
     }
     linesToRun[lines.length] = "print(\"\")";
 
-    Console.setOut((java.io.PrintStream) binder.get("out"));
+    Console.out().flush();
     out.reset();
+    Console.setOut(scalaCompiler.getPrintStream());
+    System.err.println("PRE-INTERPRET " + out.toString() + ", out=" + out.hashCode());
+
     Code r = null;
     String incomplete = "";
 
@@ -658,6 +668,7 @@ public class SparkInterpreter extends Interpreter {
       scala.tools.nsc.interpreter.Results.Result res = null;
       try {
         res = intp.interpret(incomplete + s);
+        System.err.println("INTERPRET " + incomplete + s + ", intp=" + intp + ", out=" + out.hashCode());
       } catch (Exception e) {
         sc.clearJobGroup();
         logger.info("Interpreter exception", e);
@@ -679,6 +690,7 @@ public class SparkInterpreter extends Interpreter {
     if (r == Code.INCOMPLETE) {
       return new InterpreterResult(r, "Incomplete expression");
     } else {
+      System.err.println("INTERPRET-POST " + out.toString() + "intp=" + intp + ", out=" + out.hashCode());
       return new InterpreterResult(r, out.toString());
     }
   }
