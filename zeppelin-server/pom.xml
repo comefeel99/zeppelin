@@ -295,6 +295,14 @@
       </plugin>
 
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <threadCount>1</threadCount>
+        </configuration>
+      </plugin>
+      
+
+      <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>2.16</version>
         <executions>
