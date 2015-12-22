@@ -1,4 +1,3 @@
-/* global confirm:false, alert:false */
 /* jshint loopfunc: true */
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,11 +73,16 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
   /** Remove the note and go back tot he main page */
   /** TODO(anthony): In the nearly future, go back to the main page and telle to the dude that the note have been remove */
   $scope.removeNote = function(noteId) {
-    var result = confirm('Do you want to delete this notebook?');
-    if (result) {
-      websocketMsgSrv.deleteNotebook(noteId);
-      $location.path('/#');
-    }
+    BootstrapDialog.confirm({
+      title: '',
+      message: 'Do you want to delete this notebook?',
+      callback: function(result) {
+        if (result) {
+          websocketMsgSrv.deleteNotebook(noteId);
+          $location.path('/#');
+        }
+      }
+    });
   };
 
   //Export notebook
@@ -89,20 +93,30 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
 
   //Clone note
   $scope.cloneNote = function(noteId) {
-    var result = confirm('Do you want to clone this notebook?');
-    if (result) {
-      websocketMsgSrv.cloneNotebook(noteId);
-      $location.path('/#');
-    }
+    BootstrapDialog.confirm({
+      title: '',
+      message: 'Do you want to clone this notebook?',
+      callback: function(result) {
+        if (result) {
+          websocketMsgSrv.cloneNotebook(noteId);
+          $location.path('/#');
+        }
+      }
+    });
   };
 
   $scope.runNote = function() {
-    var result = confirm('Run all paragraphs?');
-    if (result) {
-      _.forEach($scope.note.paragraphs, function(n, key) {
-        angular.element('#' + n.id + '_paragraphColumn_main').scope().runParagraph(n.text);
-      });
-    }
+    BootstrapDialog.confirm({
+      title: '',
+      message: 'Run all paragraphs?',
+      callback: function(result) {
+        if (result) {
+          _.forEach($scope.note.paragraphs, function (n, key) {
+            angular.element('#' + n.id + '_paragraphColumn_main').scope().runParagraph(n.text);
+          });
+        }
+      }
+    });
   };
 
   $scope.saveNote = function() {
@@ -115,12 +129,17 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
   };
 
   $scope.clearAllParagraphOutput = function() {
-    var result = confirm('Do you want to clear all output?');
-    if (result) {
-      _.forEach($scope.note.paragraphs, function(n, key) {
-        angular.element('#' + n.id + '_paragraphColumn_main').scope().clearParagraphOutput();
-      });
-    }
+    BootstrapDialog.confirm({
+      title: '',
+      message: 'Do you want to clear all output?',
+      callback: function(result) {
+        if (result) {
+          _.forEach($scope.note.paragraphs, function(n, key) {
+            angular.element('#' + n.id + '_paragraphColumn_main').scope().clearParagraphOutput();
+          });
+        }
+      }
+    });
   };
 
   $scope.toggleAllEditor = function() {
@@ -281,27 +300,31 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
         break;
       }
     }
-
     if (newIndex<0 || newIndex>=$scope.note.paragraphs.length) {
       return;
     }
+    // save dirtyText of moving paragraphs.
+    var prevParagraphId = $scope.note.paragraphs[newIndex].id;
+    angular.element('#' + paragraphId + '_paragraphColumn_main').scope().saveParagraph();
+    angular.element('#' + prevParagraphId + '_paragraphColumn_main').scope().saveParagraph();
     websocketMsgSrv.moveParagraph(paragraphId, newIndex);
   });
 
   // create new paragraph on current position
-  $scope.$on('insertParagraph', function(event, paragraphId) {
+  $scope.$on('insertParagraph', function(event, paragraphId, position) {
     var newIndex = -1;
     for (var i=0; i<$scope.note.paragraphs.length; i++) {
-      if ($scope.note.paragraphs[i].id === paragraphId) {
-        newIndex = i+1;
+      if ( $scope.note.paragraphs[i].id === paragraphId ) {        
+        //determine position of where to add new paragraph; default is below
+        if ( position === 'above' ) {         
+          newIndex = i;
+        } else {     
+          newIndex = i+1;
+        }
         break;
       }
     }
 
-    if (newIndex === $scope.note.paragraphs.length) {
-      alert('Cannot insert after the last paragraph.');
-      return;
-    }
     if (newIndex < 0 || newIndex > $scope.note.paragraphs.length) {
       return;
     }
@@ -320,6 +343,10 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
     if (newIndex<0 || newIndex>=$scope.note.paragraphs.length) {
       return;
     }
+    // save dirtyText of moving paragraphs.
+    var nextParagraphId = $scope.note.paragraphs[newIndex].id;
+    angular.element('#' + paragraphId + '_paragraphColumn_main').scope().saveParagraph();
+    angular.element('#' + nextParagraphId + '_paragraphColumn_main').scope().saveParagraph();
     websocketMsgSrv.moveParagraph(paragraphId, newIndex);
   });
 
@@ -382,6 +409,7 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
           $scope.note.paragraphs.splice(index, 0, note.paragraphs[index]);
           break;
         }
+        $scope.$broadcast('updateParagraph', {paragraph: note.paragraphs[index]});
       }
     }
 
@@ -417,7 +445,7 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
     $http.get(baseUrlSrv.getRestApiBase()+ '/notebook/interpreter/bind/' +$scope.note.id).
     success(function(data, status, headers, config) {
       $scope.interpreterBindings = data.body;
-      $scope.interpreterBindingsOrig = jQuery.extend(true, [], $scope.interpreterBindings); // to check dirty
+      $scope.interpreterBindingsOrig = angular.copy($scope.interpreterBindings); // to check dirty
       if (callback) {
         callback();
       }
@@ -469,12 +497,18 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl', function($scope, $ro
 
   $scope.closeSetting = function() {
     if (isSettingDirty()) {
-      var result = confirm('Changes will be discarded');
-      if (!result) {
-        return;
-      }
+      BootstrapDialog.confirm({
+        title: '',
+        message: 'Changes will be discarded',
+        callback: function(result) {
+          if (result) {
+            $scope.$apply(function () {
+              $scope.showSetting = false;
+            });
+          }
+        }
+      });
     }
-    $scope.showSetting = false;
   };
 
   $scope.saveSetting = function() {

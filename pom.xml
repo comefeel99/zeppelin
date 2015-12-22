@@ -432,6 +432,7 @@
           <configuration>
             <excludes>
               <exclude>**/*.keywords</exclude>
+              <exclude>reports/**</exclude>
               <exclude>**/.idea/</exclude>
               <exclude>**/*.iml</exclude>
               <exclude>R/**</exclude>
@@ -458,6 +459,7 @@
               <exclude>**/notebook/**</exclude>
               <exclude>_tools/site/css/*</exclude>
               <exclude>**/README.md</exclude>
+              <exclude>DEPENDENCIES</exclude>
               <exclude>DEPLOY.md</exclude>
               <exclude>CONTRIBUTING.md</exclude>
               <exclude>STYLE.md</exclude>
@@ -488,10 +490,10 @@
               <exclude>docs/Rakefile</exclude>
               <exclude>docs/rss.xml</exclude>
               <exclude>docs/sitemap.txt</exclude>
-              
+
               <!-- bundled from jekyll -->
               <exclude>docs/assets/themes/zeppelin/css/syntax.css</exclude>
-              
+
               <!-- docs (website) build target dir -->
               <exclude>docs/_site/**</exclude>
               <exclude>docs/Gemfile.lock</exclude>
@@ -707,4 +709,15 @@
       </build>
     </profile>
   </profiles>
+  <distributionManagement>
+    <site>
+      <id>Website</id>
+      <url>${site_url}</url>
+    </site>
+    <repository>
+      <id>${repoid}</id>
+      <name>${reponame}</name>
+      <url>${repourl}</url>
+    </repository>
+  </distributionManagement>
 </project>

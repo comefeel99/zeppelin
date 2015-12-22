@@ -52,9 +52,9 @@ class PyZeppelinContext(dict):
   def show(self, obj):
     from pyspark.sql import DataFrame
     if isinstance(obj, DataFrame):
-      print gateway.jvm.org.apache.zeppelin.spark.ZeppelinContext.showDF(self.z, obj._jdf)
+      print(gateway.jvm.org.apache.zeppelin.spark.ZeppelinContext.showDF(self.z, obj._jdf))
     else:
-      print str(obj)
+      print(str(obj))
 
   # By implementing special methods it makes operating on it more Pythonic
   def __setitem__(self, key, item):
@@ -77,6 +77,22 @@ class PyZeppelinContext(dict):
 
   def get(self, key):
     return self.__getitem__(key)
+
+  def input(self, name, defaultValue = ""):
+    return self.z.input(name, defaultValue)
+
+  def select(self, name, options, defaultValue = ""):
+    # auto_convert to ArrayList doesn't match the method signature on JVM side
+    tuples = map(lambda items: self.__tupleToScalaTuple2(items), options)
+    iterables = gateway.jvm.scala.collection.JavaConversions.collectionAsScalaIterable(tuples)
+    return self.z.select(name, defaultValue, iterables)
+
+  def __tupleToScalaTuple2(self, tuple):
+    if (len(tuple) == 2):
+      return gateway.jvm.scala.Tuple2(tuple[0], tuple[1])
+    else:
+      raise IndexError("options must be a list of tuple of 2")
+
 
 class SparkVersion(object):
   SPARK_1_4_0 = 140

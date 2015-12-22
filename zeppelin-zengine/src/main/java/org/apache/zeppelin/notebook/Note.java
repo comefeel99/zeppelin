@@ -28,9 +28,11 @@ import java.util.Random;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
+import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
+import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.utility.IdHashes;
@@ -39,6 +41,8 @@ import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
 
 /**
  * Binded interpreters for a note
@@ -89,7 +93,7 @@ public class Note implements Serializable, JobListener {
   public String id() {
     return id;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -144,16 +148,33 @@ public class Note implements Serializable, JobListener {
   }
 
   /**
-   * Add the paragraph p to the list of paras in note.
+   * Clone paragraph and add it to note.
    *
-   * @param p
+   * @param srcParagraph
    */
-  public void addParagraph(Paragraph p) {
+  public void addCloneParagraph(Paragraph srcParagraph) {
+    Paragraph newParagraph = new Paragraph(this, this, replLoader);
+
+    Map<String, Object> config = new HashMap<>(srcParagraph.getConfig());
+    Map<String, Object> param = new HashMap<>(srcParagraph.settings.getParams());
+    Map<String, Input> form = new HashMap<>(srcParagraph.settings.getForms());
+    Gson gson = new Gson();
+    InterpreterResult result = gson.fromJson(
+        gson.toJson(srcParagraph.getReturn()),
+        InterpreterResult.class);
+
+    newParagraph.setConfig(config);
+    newParagraph.settings.setParams(param);
+    newParagraph.settings.setForms(form);
+    newParagraph.setText(srcParagraph.getText());
+    newParagraph.setTitle(srcParagraph.getTitle());
+    newParagraph.setReturn(result, null);
+
     synchronized (paragraphs) {
-      paragraphs.add(p);
+      paragraphs.add(newParagraph);
     }
   }
-  
+
   /**
    * Insert paragraph in given index.
    *
@@ -302,7 +323,9 @@ public class Note implements Serializable, JobListener {
     if (intp == null) {
       throw new InterpreterException("Interpreter " + p.getRequiredReplName() + " not found");
     }
-    intp.getScheduler().submit(p);
+    if (p.getConfig().get("enabled") == null || (Boolean) p.getConfig().get("enabled")) {
+      intp.getScheduler().submit(p);
+    }
   }
 
   public List<String> completion(String paragraphId, String buffer, int cursor) {

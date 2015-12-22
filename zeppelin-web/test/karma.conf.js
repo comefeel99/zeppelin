@@ -55,6 +55,7 @@ module.exports = function(config) {
       'bower_components/lodash/lodash.js',
       'bower_components/angular-filter/dist/angular-filter.min.js',
       'bower_components/ngtoast/dist/ngToast.js',
+      'bower_components/bootstrap3-dialog/dist/js/bootstrap-dialog.min.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'src/app/app.js',
@@ -82,7 +83,7 @@ module.exports = function(config) {
       'PhantomJS'
     ],
 
-    reporters: 'coverage',
+    reporters: ['coverage','progress'],
 
     preprocessors: {
       'src/*/{*.js,!(test)/**/*.js}': 'coverage'
@@ -90,7 +91,8 @@ module.exports = function(config) {
 
     coverageReporter: {
       type: 'html',
-      dir: 'reports/coverage'
+      dir: '../reports/zeppelin-web-coverage',
+      subdir: '.'
     },
 
     // Which plugins to enable
