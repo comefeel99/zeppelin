@@ -80,6 +80,10 @@ public class SparkVersion {
     return this.newerThanEquals(SPARK_1_2_0);
   }
 
+  public boolean isSparkRSupported() {
+    return this.newerThanEquals(SPARK_1_4_0);
+  }
+
   public boolean hasDataFrame() {
     return this.newerThanEquals(SPARK_1_4_0);
   }
