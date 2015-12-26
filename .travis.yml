@@ -32,14 +32,14 @@ before_install:
 #  - sudo R -e 'devtools::install_github("IRkernel/repr")'
 
 install:
-  - mvn package -DskipTests -Pspark-1.5 -Phadoop-2.3 -Ppyspark -B
+  - mvn package -DskipTests -Pspark-1.5 -Phadoop-2.3 -Ppyspark -B -pl '!r'
 
 before_script:
   -
 
 script:
  # spark 1.5
-  - mvn package -Pbuild-distr -Pspark-1.5 -Phadoop-2.3 -Ppyspark -B
+  - mvn package -Pbuild-distr -Pspark-1.5 -Phadoop-2.3 -Ppyspark -B -pl '!r'
   - ./testing/startSparkCluster.sh 1.5.2 2.3
   - echo "export SPARK_HOME=`pwd`/spark-1.5.2-bin-hadoop2.3" > conf/zeppelin-env.sh
   - mvn verify -Pusing-packaged-distr -Pspark-1.5 -Phadoop-2.3 -Ppyspark -B -pl '!r'
