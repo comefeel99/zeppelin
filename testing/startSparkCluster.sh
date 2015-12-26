@@ -64,3 +64,7 @@ if [ $? -eq 0 ]; then   # spark 1.3 or prior
 else
     ${SPARK_HOME}/sbin/start-slave.sh spark://`hostname`:7071
 fi
+
+
+sleep 20
+curl http://`hostname`:${SPARK_MASTER_WEBUI_PORT}
