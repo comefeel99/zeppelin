@@ -323,17 +323,17 @@ public class NotebookTest implements JobListenerFactory{
         .getAngularObjectRegistry();
 
     // add local scope object
-    registry.add("o1", "object1", note.id());
+    registry.add("o1", "object1", note.id(), null);
     // add global scope object
-    registry.add("o2", "object2", null);
+    registry.add("o2", "object2", null, null);
 
     // remove notebook
     notebook.removeNote(note.id());
 
     // local object should be removed
-    assertNull(registry.get("o1", note.id()));
+    assertNull(registry.get("o1", note.id(), null));
     // global object sould be remained
-    assertNotNull(registry.get("o2", null));
+    assertNotNull(registry.get("o2", null, null));
   }
 
   @Test
@@ -348,9 +348,9 @@ public class NotebookTest implements JobListenerFactory{
         .getAngularObjectRegistry();
 
     // add local scope object
-    registry.add("o1", "object1", note.id());
+    registry.add("o1", "object1", note.id(), null);
     // add global scope object
-    registry.add("o2", "object2", null);
+    registry.add("o2", "object2", null, null);
 
     // restart interpreter
     factory.restart(note.getNoteReplLoader().getInterpreterSettings().get(0).id());
@@ -359,8 +359,8 @@ public class NotebookTest implements JobListenerFactory{
     .getAngularObjectRegistry();
 
     // local and global scope object should be removed
-    assertNull(registry.get("o1", note.id()));
-    assertNull(registry.get("o2", null));
+    assertNull(registry.get("o1", note.id(), null));
+    assertNull(registry.get("o2", null, null));
     notebook.removeNote(note.id());
   }
 
