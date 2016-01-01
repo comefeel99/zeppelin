@@ -18,7 +18,6 @@
 angular.module('zeppelinWebApp').controller('NotebookCtrl',
   function($scope, $route, $routeParams, $location, $rootScope, $http,
     websocketMsgSrv, baseUrlSrv, $timeout, SaveAsService) {
-  var ANGULAR_FUNCTION_OBJECT_NAME_PREFIX = '_Z_ANGULAR_FUNC_';
   $scope.note = null;
   $scope.showEditor = false;
   $scope.editorToggled = false;
@@ -627,68 +626,4 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       return true;
     }
   };
-
-  $scope.$on('angularObjectUpdate', function(event, data) {
-    if (data.noteId === $scope.note.id && !data.paragraphId) {
-      var scope = $rootScope.notebookScope;
-      var varName = data.angularObject.name;
-
-      if (angular.equals(data.angularObject.object, scope[varName])) {
-        // return when update has no change
-        return;
-      }
-
-      if (!angularObjectRegistry[varName]) {
-        angularObjectRegistry[varName] = {
-          interpreterGroupId : data.interpreterGroupId,
-        };
-      }
-
-      angularObjectRegistry[varName].skipEmit = true;
-
-      if (!angularObjectRegistry[varName].clearWatcher) {
-        angularObjectRegistry[varName].clearWatcher = scope.$watch(varName, function(newValue, oldValue) {
-          if (angularObjectRegistry[varName].skipEmit) {
-            angularObjectRegistry[varName].skipEmit = false;
-            return;
-          }
-          websocketMsgSrv.updateAngularObject($routeParams.noteId, undefined, varName, newValue, angularObjectRegistry[varName].interpreterGroupId);
-        });
-      }
-      scope[varName] = data.angularObject.object;
-
-      // create proxy for AngularFunction
-      if (varName.startsWith(ANGULAR_FUNCTION_OBJECT_NAME_PREFIX)) {
-        var funcName = varName.substring((ANGULAR_FUNCTION_OBJECT_NAME_PREFIX).length);
-        scope[funcName] = function() {
-          scope[varName] = arguments;
-          console.log('angular function invoked %o', arguments);
-        };
-
-        console.log('angular function created %o', scope[funcName]);
-      }
-    }
-  });
-
-  $scope.$on('angularObjectRemove', function(event, data) {
-    if (!data.noteId || (data.noteId === $scope.note.id && !data.paragraphId)) {
-      var scope = $rootScope.notebookScope;
-      var varName = data.name;
-
-      // clear watcher
-      if (angularObjectRegistry[varName]) {
-        angularObjectRegistry[varName].clearWatcher();
-        angularObjectRegistry[varName] = undefined;
-      }
-
-      // remove scope variable
-      scope[varName] = undefined;
-
-      // remove proxy for AngularFunction
-      if (varName.startsWith(ANGULAR_FUNCTION_OBJECT_NAME_PREFIX)) {
-        var funcName = varName.substring((ANGULAR_FUNCTION_OBJECT_NAME_PREFIX).length);
-        scope[funcName] = undefined;
-      }
-    }
-  });
 });
