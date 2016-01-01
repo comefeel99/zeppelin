@@ -33,23 +33,25 @@ public class AngularFunction extends AngularObjectWatcher {
   private final AngularObjectRegistry registry;
   private final String name;
   private final String noteId;
+  private final String paragraphId;
   private final AngularFunctionRunnable runnable;
 
     // arguments of invocation from fron-end proxy function
   AngularObject angularObject;
 
   protected AngularFunction(AngularObjectRegistry registry,
-                         String name, String noteId,
+                         String name, String noteId, String paragraphId,
                          AngularFunctionRunnable runnable) {
     super(null);
     this.name = name;
     this.noteId = noteId;
+    this.paragraphId = paragraphId;
     this.runnable = runnable;
     this.registry = registry;
 
     remove();
 
-    angularObject = registry.add(getFuncName(name), "", noteId);
+    angularObject = registry.add(getFuncName(name), "", noteId, paragraphId);
     angularObject.addWatcher(this);
   }
 
@@ -74,7 +76,7 @@ public class AngularFunction extends AngularObjectWatcher {
 
 
   void remove() {
-    registry.remove(getFuncName(name), noteId);
+    registry.remove(getFuncName(name), noteId, paragraphId);
   }
 
   public String getNoteId() {
