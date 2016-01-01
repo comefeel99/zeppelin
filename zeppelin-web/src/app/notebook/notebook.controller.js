@@ -18,7 +18,6 @@
 angular.module('zeppelinWebApp').controller('NotebookCtrl',
   function($scope, $route, $routeParams, $location, $rootScope, $http,
     websocketMsgSrv, baseUrlSrv, $timeout, SaveAsService) {
-
   var ANGULAR_FUNCTION_OBJECT_NAME_PREFIX = '_Z_ANGULAR_FUNC_';
   $scope.note = null;
   $scope.showEditor = false;
@@ -630,8 +629,8 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
   };
 
   $scope.$on('angularObjectUpdate', function(event, data) {
-    if (data.noteId === $scope.note.id) {
-      var scope = $rootScope.compiledScope;
+    if (data.noteId === $scope.note.id && !data.paragraphId) {
+      var scope = $rootScope.notebookScope;
       var varName = data.angularObject.name;
 
       if (angular.equals(data.angularObject.object, scope[varName])) {
@@ -653,7 +652,7 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
             angularObjectRegistry[varName].skipEmit = false;
             return;
           }
-          websocketMsgSrv.updateAngularObject($routeParams.noteId, varName, newValue, angularObjectRegistry[varName].interpreterGroupId);
+          websocketMsgSrv.updateAngularObject($routeParams.noteId, undefined, varName, newValue, angularObjectRegistry[varName].interpreterGroupId);
         });
       }
       scope[varName] = data.angularObject.object;
@@ -672,8 +671,8 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
   });
 
   $scope.$on('angularObjectRemove', function(event, data) {
-    if (!data.noteId || data.noteId === $scope.note.id) {
-      var scope = $rootScope.compiledScope;
+    if (!data.noteId || (data.noteId === $scope.note.id && !data.paragraphId)) {
+      var scope = $rootScope.notebookScope;
       var varName = data.name;
 
       // clear watcher
