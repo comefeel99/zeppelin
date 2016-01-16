@@ -44,7 +44,7 @@ matrix:
 before_install:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
-  - ./testing/install_r.sh
+  - sudo ./testing/install_r.sh
 
 install:
   - mvn $BUILD_FLAG $PROFILE -B
