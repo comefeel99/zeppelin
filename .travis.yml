@@ -44,12 +44,12 @@ matrix:
 before_install:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
+  - ./testing/install_r.sh
 
 install:
   - mvn $BUILD_FLAG $PROFILE -B
 
 before_script:
-  - ./testing/install_r.sh
   - ./testing/startSparkCluster.sh $SPARK_VER $HADOOP_VER
   - echo "export SPARK_HOME=`pwd`/spark-$SPARK_VER-bin-hadoop$HADOOP_VER" > conf/zeppelin-env.sh
 
