@@ -45,11 +45,11 @@
             <artifactId>log4j</artifactId>
             <scope>provided</scope>
         </dependency>
-	    <dependency>
-		    <groupId>${project.groupId}</groupId>
-      		<artifactId>zeppelin-spark-dependencies</artifactId>
-      		<version>${project.version}</version>
-      		<scope>provided</scope>
+	<dependency>
+	    <groupId>${project.groupId}</groupId>
+      	    <artifactId>zeppelin-spark-dependencies</artifactId>
+      	    <version>${project.version}</version>
+      	    <scope>provided</scope>
 	</dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -64,51 +64,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-repl_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-hive_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-catalyst_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-client</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-        <groupId>org.scala-lang</groupId>
-        <artifactId>scala-library</artifactId>
-        <version>${scala.version}</version>
-        <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
@@ -134,35 +93,7 @@
             <version>[1.8.0,)</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.datanucleus</groupId>
-            <artifactId>datanucleus-core</artifactId>
-            <scope>test</scope>
-            <version>3.2.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.datanucleus</groupId>
-            <artifactId>datanucleus-api-jdo</artifactId>
-            <version>3.2.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.datanucleus</groupId>
-            <artifactId>datanucleus-rdbms</artifactId>
-            <version>3.2.9</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
-
-
-
 
     <build>
         <plugins>
