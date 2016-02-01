@@ -40,6 +40,9 @@ import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.interpreter.remote.RemoteAngularObjectRegistry;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.NotebookRepoSync;
+import org.apache.zeppelin.resource.ResourcePool;
+import org.apache.zeppelin.resource.ResourcePoolUtils;
+import org.apache.zeppelin.resource.ResourceSet;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.search.SearchService;
 import org.quartz.CronScheduleBuilder;
@@ -290,11 +293,27 @@ public class Notebook {
       }
     }
 
+    // remove all resource in the resource pool related to this note
+    for (InterpreterSetting settings : replFactory.get()) {
+      ResourcePool resourcePool = settings.getInterpreterGroup().getResourcePool();
+      asdf
+      if (registry instanceof RemoteAngularObjectRegistry) {
+        ((RemoteAngularObjectRegistry) registry).removeAllAndNotifyRemoteProcess(id, null);
+      } else {
+        registry.removeAll(id, null);
+      }
+    }
+
     try {
       note.unpersist();
     } catch (IOException e) {
       logger.error(e.toString(), e);
     }
+  }
+
+  private ResourceSet getAllResources() {
+    ResourceSet rs = ResourcePoolUtils.getAllResources();
+    return rs.filterByNoteId(id);
   }
 
   @SuppressWarnings("rawtypes")

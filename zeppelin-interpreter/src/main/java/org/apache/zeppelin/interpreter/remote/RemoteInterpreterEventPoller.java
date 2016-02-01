@@ -24,19 +24,14 @@ import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.interpreter.InterpreterContextRunner;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
-import org.apache.zeppelin.interpreter.InterpreterOutputListener;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEvent;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterEventType;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService.Client;
-import org.apache.zeppelin.resource.Resource;
-import org.apache.zeppelin.resource.ResourceId;
-import org.apache.zeppelin.resource.ResourcePool;
-import org.apache.zeppelin.resource.ResourceSet;
+import org.apache.zeppelin.resource.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +121,8 @@ public class RemoteInterpreterEventPoller extends Thread {
           interpreterProcess.getInterpreterContextRunnerPool().run(
               runnerFromRemote.getNoteId(), runnerFromRemote.getParagraphId());
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_POOL_GET_ALL) {
-          ResourceSet resourceSet = getAllResourcePoolExcept();
+          ResourceSet resourceSet = ResourcePoolUtils.getAllResourcesExcept(
+              interpreterGroup.getId());
           sendResourcePoolResponseGetAll(resourceSet);
         } else if (event.getType() == RemoteInterpreterEventType.RESOURCE_GET) {
           String resourceIdString = event.getData();
@@ -181,42 +177,6 @@ public class RemoteInterpreterEventPoller extends Thread {
     }
   }
 
-  private ResourceSet getAllResourcePoolExcept() {
-    ResourceSet resourceSet = new ResourceSet();
-    for (InterpreterGroup intpGroup : InterpreterGroup.getAll()) {
-      if (intpGroup.getId().equals(interpreterGroup.getId())) {
-        continue;
-      }
-
-      RemoteInterpreterProcess remoteInterpreterProcess = intpGroup.getRemoteInterpreterProcess();
-      if (remoteInterpreterProcess == null) {
-        ResourcePool localPool = intpGroup.getResourcePool();
-        if (localPool != null) {
-          resourceSet.addAll(localPool.getAll());
-        }
-      } else if (interpreterProcess.isRunning()) {
-        Client client = null;
-        boolean broken = false;
-        try {
-          client = remoteInterpreterProcess.getClient();
-          List<String> resourceList = client.resoucePoolGetAll();
-          Gson gson = new Gson();
-          for (String res : resourceList) {
-            resourceSet.add(gson.fromJson(res, Resource.class));
-          }
-        } catch (Exception e) {
-          logger.error(e.getMessage(), e);
-          broken = true;
-        } finally {
-          if (client != null) {
-            intpGroup.getRemoteInterpreterProcess().releaseClient(client, broken);
-          }
-        }
-      }
-    }
-    return resourceSet;
-  }
-
 
 
   private void sendResourceResponseGet(ResourceId resourceId, Object o) {
@@ -259,7 +219,8 @@ public class RemoteInterpreterEventPoller extends Thread {
       boolean broken = false;
       try {
         client = remoteInterpreterProcess.getClient();
-        ByteBuffer res = client.resourceGet(resourceId.getName());
+        ByteBuffer res = client.resourceGet(resourceId.getNoteId(), resourceId
+            .getParagraphId(), resourceId.getName());
         Object o = Resource.deserializeObject(res);
         return o;
       } catch (Exception e) {

@@ -619,10 +619,19 @@ public class RemoteInterpreterServer
     return result;
   }
 
+
   @Override
-  public ByteBuffer resourceGet(String resourceName) throws TException {
+  public boolean resourceRemove(String noteId, String paragraphId, String resourceName)
+      throws TException {
+    Resource resource = resourcePool.remove(noteId, paragraphId, resourceName);
+    return resource != null;
+  }
+
+  @Override
+  public ByteBuffer resourceGet(String noteId, String paragraphId, String resourceName)
+      throws TException {
     logger.debug("Request resourceGet {} from ZeppelinServer", resourceName);
-    Resource resource = resourcePool.get(resourceName, false);
+    Resource resource = resourcePool.get(noteId, paragraphId, resourceName, false);
 
     if (resource == null || resource.get() == null || !resource.isSerializable()) {
       return ByteBuffer.allocate(0);
