@@ -45,4 +45,16 @@ public class LocalResourcePoolTest {
     assertNotNull(pool.remove("item1"));
     assertNull(pool.remove("item1"));
   }
+
+  @Test
+  public void testResourceIdentify() {
+    LocalResourcePool pool = new LocalResourcePool("pool1");
+    pool.put("note1", "paragraph1", "name1", "value1");
+    pool.put("note1", "paragraph1", "name2", "value2");
+    pool.put("note1", "paragraph2", "name1", "value3");
+    pool.put("note2", "paragraph2", "name1", "value4");
+
+    assertEquals(4, pool.getAll().size());
+
+  }
 }

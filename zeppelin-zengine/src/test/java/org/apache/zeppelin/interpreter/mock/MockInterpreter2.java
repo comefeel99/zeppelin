@@ -45,7 +45,9 @@ public class MockInterpreter2 extends Interpreter{
 
 	@Override
 	public InterpreterResult interpret(String st, InterpreterContext context) {
-		return new InterpreterResult(InterpreterResult.Code.SUCCESS, "repl2: "+st);
+		InterpreterResult result = new InterpreterResult(InterpreterResult.Code.SUCCESS, "repl2: " + st);
+		context.getResourcePool().put(context.getNoteId(), context.getParagraphId(), "result", result);
+		return result;
 	}
 
 	@Override
