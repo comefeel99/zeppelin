@@ -18,7 +18,7 @@ limitations under the License.
           type="button"
           class="btn btn-default btn-sm"
           ng-click="switchApp(app.id)"
-          ng-class="{'active' : isActiveApp(app.id)}"
+          ng-class="{'active' : activeApp.id == app.id}"
           ng-bind-html="app.icon">
   </button>
 
@@ -43,9 +43,10 @@ limitations under the License.
     </li>
   </ul>
 </div>
-<span ng-if="getResultType()=='TABLE' && getGraphMode()!='table' && !asIframe && !viewOnly"
+
+<span ng-if="isActiveAppSettingAvailable && !asIframe && !viewOnly"
       style="margin-left:10px; cursor:pointer; display: inline-block; vertical-align:top; position: relative; line-height:30px;">
-  <a class="btnText" ng-click="toggleGraphOption()">
-    settings <span ng-class="paragraph.config.graph.optionOpen ? 'fa fa-caret-up' : 'fa fa-caret-down'"></span>
+  <a class="btnText" ng-click="toggleAppSetting()">
+    settings <span ng-class="isAppSettingOpen ? 'fa fa-caret-up' : 'fa fa-caret-down'"></span>
   </a>
 </span>

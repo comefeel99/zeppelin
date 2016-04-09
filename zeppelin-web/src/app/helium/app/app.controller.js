@@ -14,7 +14,7 @@
  */
 'use strict';
 
-angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $route, $routeParams, $location, $rootScope, $http, $timeout, baseUrlSrv, ngToast, websocketMsgSrv) {
+angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $route, $routeParams, $location, $rootScope, $http, $timeout, $compile, baseUrlSrv, ngToast, websocketMsgSrv) {
   var noteId = $route.current.pathParams.noteId;
   var paragraph;      // paragraph
 
@@ -26,17 +26,33 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
   }
 
 
+  // current paragraphId
+  $scope.paragraphId;
+
   // apps to be displayed in selector.
   $scope.apps = [];
 
+  // currently selected app
+  $scope.activeApp;
+
+  // if setting is provided by current app
+  $scope.activeAppSettingAvailable;
+
+  // built-in app (charts) runs in front-end side.
+  // appInstance keeps reference to instance of visualizations and transformations
+  var appInstance = {}
+
   // suggestions
   $scope.suggestion = {};
+
 
 
   var setParagraph = function(_paragraph) {
     paragraph = _paragraph;
     previousValues.config = angular.copy(_paragraph.config);
     previousValues.dateFinished = angular.copy(_paragraph.dateFinished);
+
+    $scope.paragraphId = _paragraph.id;
   }
 
   var isUpdateRequired = function(_paragraph) {
@@ -63,6 +79,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
    */
   $scope.$on('updateParagraph', function(event, data) {
     if (paragraph.id === data.paragraph.id && isUpdateRequired(data.paragraph)) {
+      console.log("updateParagraph %o", data.paragraph);
       setParagraph(data.paragraph);
 
       getApplicationStates();
@@ -73,19 +90,27 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
   });
 
   /**
-   * Return id of paragraph this app controller belongs to
-   * @returns {*}
+   * Some scope variable only able to be updated after built-in app instance creation
    */
-  $scope.getParagraphId = function() {
-    return paragraph.id;
+  var setScopeVariablesForAppInstance = function() {
+    var activeApp = getActiveApp();
+    var activeAppInstance = getAppInstance(activeApp.id);
+
+    $scope.activeApp = activeApp;
+    $scope.isAppSettingOpen = paragraph.config.graph.optionOpen;
+    $scope.isActiveAppSettingAvailable = activeApp &&
+      activeAppInstance.transformation &&
+      activeAppInstance.transformation.settingAvailable;
+
+    console.log("set activeApp %o %o", activeApp.id, activeApp);
   };
+
 
   /**
    * switch app
    * @param appId
    */
   $scope.switchApp = function(appId) {
-    console.log('switch %o', appId);
     var app = _.find($scope.apps, { id : appId });
     var config = paragraph.config;
     var settings = paragraph.settings;
@@ -118,20 +143,6 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
     return _.find($scope.apps, { id : appId });
   };
 
-  /**
-   * check if appId is activated
-   * @param appId
-   */
-  $scope.isActiveApp = function(appId) {
-    var config = paragraph.config;
-
-    if (config.activeApp) {
-      return config.activeApp === appId;
-    } else {
-      return config.graph.mode === appId;
-    }
-  };
-
   $scope.loadApp = function(heliumPackage) {
     console.log('Load application %o', heliumPackage);
     // Get suggested apps
@@ -157,12 +168,12 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
   };
 
   var getApplicationStates = function() {
-    $scope.apps = [];
+    var appStates = [];
 
     // If paragraph type is table, include built-in visualizations
     if (isTableResultAvailableInFrontEnd()) {
       // ApplicationState for table
-      $scope.apps.push({
+      appStates.push({
         id: 'table',
         name: 'Table',
         status: 'LOADED',
@@ -173,7 +184,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       });
 
       // ApplicationState for bar chart
-      $scope.apps.push({
+      appStates.push({
         id: 'multiBarChart',
         name: 'BarChart',
         status: 'LOADED',
@@ -184,7 +195,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       });
 
       // ApplicationState for pie chart
-      $scope.apps.push({
+      appStates.push({
         id: 'pieChart',
         name: 'PieChart',
         status: 'LOADED',
@@ -193,7 +204,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       });
 
       // ApplicationState for area chart
-      $scope.apps.push({
+      appStates.push({
         id: 'stackedAreaChart',
         name: 'AreaChart',
         status: 'LOADED',
@@ -202,7 +213,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       });
 
       // ApplicationState for line chart
-      $scope.apps.push({
+      appStates.push({
         id: 'lineChart',
         name: 'LineChart',
         status: 'LOADED',
@@ -211,7 +222,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       });
 
       // ApplicationState for scatter chart
-      $scope.apps.push({
+      appStates.push({
         id: 'scatterChart',
         name: 'ScatterChart',
         status: 'LOADED',
@@ -223,7 +234,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
     // Display ApplicationState
     if (paragraph.apps) {
       _.forEach(paragraph.apps, function (app) {
-        $scope.apps.push({
+        appStates.push({
           id: app.id,
           name: app.name,
           status: app.status,
@@ -232,6 +243,23 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
         });
       });
     }
+
+    // update or remove app states no longer exists
+    _.forEach($scope.apps, function(currentAppState, idx) {
+      var newAppState = _.find(appStates, { id : currentAppState.id });
+      if (newAppState) {
+        angular.extend($scope.apps[idx], newAppState);
+      } else {
+        $scope.apps.splice(idx, 1);
+      }
+    });
+
+    // add new app states
+    _.forEach(appStates, function(app, idx) {
+      if ($scope.apps.length <= idx || $scope.apps[idx].id !== app.id) {
+        $scope.apps.splice(idx, 0, app);
+      }
+    });
   };
 
   var getSuggestions = function() {
@@ -251,6 +279,15 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
     return !object;
   };
 
+  var getAppInstance = function(appId) {
+    if (!appInstance[appId]) {
+      appInstance[appId] = {
+        viz : undefined,
+        transformation : undefined
+      };
+    }
+    return appInstance[appId];
+  };
 
   var renderActiveApplication = function() {
     var app = getActiveApp();
@@ -260,32 +297,49 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
     }
 
     var targetEl = angular.element('#p' + paragraph.id + '_' + app.id);
-    var settingTargetEl = angular.element('#p' + paragraph.id + '_' + app.id);
+    var settingTargetEl = angular.element('#s' + paragraph.id + '_' + app.id);
     if (targetEl.length && settingTargetEl.length) {
       if (app.builtin) {
         var data = paragraph.result;
 
+        var activeBuiltInAppInstance = getAppInstance(app.id);
+
         if (app.transformation) {
-          // app._tr keeps reference to the transformation instance
-          if (!app._tr) {
-            app._tr = new app.transformation(settingTargetEl, data, paragraph.config.graph);
+          if (!activeBuiltInAppInstance.transformation) {
+            activeBuiltInAppInstance.transformation = new app.transformation(settingTargetEl, data, paragraph.config.graph);
           }
-          data = app._tr.transform();
+          data = activeBuiltInAppInstance.transformation.transform();
         }
 
-        // app._viz keeps reference to the visualization instance
-        if (!app._viz) {
-          app._viz = new app.viz(targetEl, data, paragraph.config.graph);
+        if (!activeBuiltInAppInstance.viz) {
+          activeBuiltInAppInstance.viz = new app.viz(targetEl, data, paragraph.config.graph);
+          activeBuiltInAppInstance.viz.render();
+          console.log("Render built-in visualization %o", app);
         }
-        app._viz.render();
+
       } else {
         console.log("Helium app render %o", targetEl);
         targetEl.html('helium app' + app.id);
       }
+
+      setScopeVariablesForAppInstance();
     } else {
       // retry until element is ready
+      console.log("wait for element ready");
       $timeout(renderActiveApplication, 10);
     }
+  };
+
+  $scope.toggleAppSetting = function() {
+    var newConfig = angular.copy(paragraph.config);
+    if (newConfig.graph.optionOpen) {
+      newConfig.graph.optionOpen = false;
+    } else {
+      newConfig.graph.optionOpen = true;
+    }
+    var newParams = angular.copy(paragraph.settings.params);
+
+    commitConfig(newConfig, newParams);
   };
 
 
@@ -302,11 +356,11 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       this.config = config;
     };
 
-    this.renderSetting = undefined;
-
     this.transform = function() {
       return this.data;
     };
+
+    this.settingAvailable = false;
 
     return this;
   };
@@ -397,6 +451,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
    */
   var PivotTransformation = function(targetEl, data, config) {
     this.init(targetEl, data, config);
+    this.settingAvailable = true;
 
     /**
      *
@@ -404,7 +459,11 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
      * @returns {*} pivot data format
      */
     this.transform = function() {
-      return pivot(this.resultToTableData(data), this.config);
+      this.targetEl.load('app/helium/app/pivot-setting.html');
+      $compile(this.targetEl.contents())($scope);
+
+      var tableData = this.resultToTableData(data);
+      return pivot(tableData, this.config);
     };
 
     var pivot = function(data, config) {
@@ -632,8 +691,8 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       }
       html += '  </tbody>';
       html += '</table>';
-
       this.targetEl.html(html);
+      console.log("writing table %o %o", html, this.targetEl);
     };
 
     return this;
@@ -652,8 +711,6 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
       if (!this.svgEl) {
         this.svgEl = this.targetEl.append("<svg></svg>").find("svg")[0];
       }
-
-      console.log("Svg El %o", this.svgEl);
 
       var height = this.config.height;
       var data = this.data;
@@ -676,6 +733,7 @@ angular.module('zeppelinWebApp').controller('HeliumAppCtrl', function($scope, $r
         .duration(animationDuration)
         .call(this.chartModel);
       d3.select(this.svgEl).style.height = height+'px';
+
       nv.utils.windowResize(this.chartModel.update);
     };
 

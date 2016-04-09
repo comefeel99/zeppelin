@@ -14,8 +14,11 @@ limitations under the License.
 
 <div ng-if="apps.length > 0">
   <div ng-repeat="app in apps">
-    <div id="p{{getParagraphId()}}_{{app.id}}"
-         ng-if="isActiveApp(app.id)">
+    <div ng-show="activeApp.id == app.id"
+         class="graphContainer">
+      <div id="s{{paragraphId}}_{{app.id}}"
+           ng-show="isAppSettingOpen"></div>
+      <div id="p{{paragraphId}}_{{app.id}}"></div>
     </div>
   </div>
 </div>
