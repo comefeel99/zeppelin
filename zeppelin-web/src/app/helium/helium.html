@@ -1,0 +1,20 @@
+<div class="row heliumHead">
+  <div class="col-md-12">
+    <h3 class="new_h3">
+      Helium
+    </h3>
+  </div>
+</div>
+
+<div class="heliumPackage">
+  <div class="row"
+       ng-repeat="app in allPackages">
+    <div class="col-md-12">
+      <div class="item">
+        <h4>{{app.pkg.name}}</h4>
+        <div>{{app.pkg.description}}</div>
+      </div>
+    </div>
+  </div>
+  <hr />
+</div>

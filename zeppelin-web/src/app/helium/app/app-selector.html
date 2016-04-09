@@ -1,0 +1,51 @@
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div ng-if="apps.length > 0"
+     class="btn-group appSelector">
+  <button ng-repeat="app in apps"
+          type="button"
+          class="btn btn-default btn-sm"
+          ng-click="switchApp(app.id)"
+          ng-class="{'active' : isActiveApp(app.id)}"
+          ng-bind-html="app.icon">
+  </button>
+
+</div>
+
+<div ng-if="suggestion.available && suggestion.available.length > 0"
+     class="btn-group appSelector">
+  <button type="button"
+          class="btn btn-default btn-sm dropdown-toggle"
+          data-toggle="dropdown"
+          style="font-weight:bold">
+    He
+  </button>
+  <ul class="dropdown-menu"
+      role="menu">
+    <li class="appSuggestion">
+      <div ng-repeat="pkgInfo in suggestion.available">
+        <a ng-click="loadApp(pkgInfo.pkg)">
+          {{pkgInfo.pkg.name}}
+        </a>
+      </div>
+    </li>
+  </ul>
+</div>
+<span ng-if="getResultType()=='TABLE' && getGraphMode()!='table' && !asIframe && !viewOnly"
+      style="margin-left:10px; cursor:pointer; display: inline-block; vertical-align:top; position: relative; line-height:30px;">
+  <a class="btnText" ng-click="toggleGraphOption()">
+    settings <span ng-class="paragraph.config.graph.optionOpen ? 'fa fa-caret-up' : 'fa fa-caret-down'"></span>
+  </a>
+</span>

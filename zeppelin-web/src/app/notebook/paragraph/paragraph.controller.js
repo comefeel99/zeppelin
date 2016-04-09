@@ -1136,6 +1136,7 @@ angular.module('zeppelinWebApp')
   };
 
   $scope.setGraphMode = function(type, emit, refresh) {
+    return;
     if (emit) {
       setNewMode(type);
     } else {

@@ -66,6 +66,10 @@
                     templateUrl: 'app/interpreter/interpreter.html',
                     controller: 'InterpreterCtrl'
                 })
+                .when('/helium', {
+                    templateUrl: 'app/helium/helium.html',
+                    controller: 'HeliumCtrl'
+                })
                 .when('/configuration', {
                   templateUrl: 'app/configuration/configuration.html',
                   controller: 'ConfigurationCtrl'

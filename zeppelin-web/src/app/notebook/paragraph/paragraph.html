@@ -53,12 +53,23 @@ limitations under the License.
     <div ng-include src="'app/notebook/paragraph/paragraph-progressBar.html'"></div>
     <div ng-include src="'app/notebook/paragraph/paragraph-parameterizedQueryForm.html'"></div>
 
+    <!-- Helium app -->
+    <div class='tableDisplay'
+         ng-show="!paragraph.config.tableHide"
+         ng-controller="HeliumAppCtrl"
+         ng-init="init(paragraph)">
+      <div ng-include src="'app/helium/app/app-selector.html'"></div>
+      <div ng-include src="'app/helium/app/app-display.html'"></div>
+    </div>
+
     <!-- Rendering -->
+    <!--
     <div class='tableDisplay' ng-show="!paragraph.config.tableHide">
       <div ng-include src="'app/notebook/paragraph/paragraph-chart-selector.html'"></div>
       <div ng-include src="'app/notebook/paragraph/paragraph-pivot.html'"></div>
       <div ng-include src="'app/notebook/paragraph/paragraph-results.html'"></div>
     </div>
+    -->
   </div>
 
   <div ng-include src="'app/notebook/paragraph/paragraph-control.html'"></div>
