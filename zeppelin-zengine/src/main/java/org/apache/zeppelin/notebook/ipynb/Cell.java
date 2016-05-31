@@ -28,11 +28,17 @@ import java.util.Map;
  * Ipython notebook format cell
  */
 public class Cell {
+  /**
+   * CellType
+   */
   public static enum CellType {
     markdown,
     code
   }
 
+  /**
+   * OutputType
+   */
   public static enum OutputType {
     display_data,
     execute_result

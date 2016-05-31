@@ -91,10 +91,11 @@ public class Ipynb {
                   InterpreterResult.Type.TEXT,
                   StringUtils.join((ArrayList) output.data.get("text/plain"), "")), null);
             } else if (output.data.get("image/png") != null) {
+              String imgString = ((String) output.data.get("image/png")).replaceAll("\n", "");
               p.setReturn(new InterpreterResult(
                   InterpreterResult.Code.SUCCESS,
                   InterpreterResult.Type.IMG,
-                  (String) output.data.get("image/png")), null);
+                  imgString), null);
             } else {
               // supported output data type not found
             }
