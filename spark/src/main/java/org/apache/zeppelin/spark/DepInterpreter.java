@@ -171,7 +171,7 @@ public class DepInterpreter extends Interpreter {
     if (Utils.isScala2_10()) {
       Utils.invokeMethod(intp, "setContextClassLoader");
       Utils.invokeMethod(intp, "initializeSynchronous");
-    }
+   }
 
     depc = new SparkDependencyContext(getProperty("zeppelin.dep.localrepo"),
                                  getProperty("zeppelin.dep.additionalRemoteRepository"));
@@ -188,7 +188,7 @@ public class DepInterpreter extends Interpreter {
     } else {
       binder = (Map<String, Object>) getLastObject();
     }
-    binder.put("depc", depc);
+   binder.put("depc", depc);
 
     interpret("@transient val z = "
         + "_binder.get(\"depc\")"
@@ -300,7 +300,7 @@ public class DepInterpreter extends Interpreter {
     } else {
       return new LinkedList<InterpreterCompletion>();
     }
-  }
+ }
 
   private List<File> currentClassPath() {
     List<File> paths = classPath(Thread.currentThread().getContextClassLoader());
@@ -354,6 +354,86 @@ public class DepInterpreter extends Interpreter {
     if (sparkInterpreter != null) {
       return getSparkInterpreter().getScheduler();
     } else {
+      return null;
+    }
+  }
+
+  private Object invokeMethod(Object o, String name) {
+    return invokeMethod(o, name, new Class[]{}, new Object[]{});
+  }
+
+  private Object invokeMethod(Object o, String name, Class [] argTypes, Object [] params) {
+    try {
+      return o.getClass().getMethod(name, argTypes).invoke(o, params);
+    } catch (NoSuchMethodException e) {
+      logger.error(e.getMessage(), e);
+    } catch (InvocationTargetException e) {
+      logger.error(e.getMessage(), e);
+    } catch (IllegalAccessException e) {
+      logger.error(e.getMessage(), e);
+    }
+
+    return null;
+  }
+
+  private Object invokeStaticMethod(Class c, String name) {
+    return invokeStaticMethod(c, name, new Class[]{}, new Object[]{});
+  }
+
+  private Object invokeStaticMethod(Class c, String name, Class [] argTypes, Object [] params) {
+    try {
+      return c.getMethod(name, argTypes).invoke(null, params);
+    } catch (NoSuchMethodException e) {
+      logger.error(e.getMessage(), e);
+    } catch (InvocationTargetException e) {
+      logger.error(e.getMessage(), e);
+      e.printStackTrace();
+    } catch (IllegalAccessException e) {
+      logger.error(e.getMessage(), e);
+    }
+
+    return null;
+  }
+
+  private Object instantiateClass(String name, Class [] argTypes, Object [] params) {
+    try {
+      Constructor<?> constructor = getClass().getClassLoader()
+          .loadClass(name).getConstructor(argTypes);
+      return constructor.newInstance(params);
+    } catch (NoSuchMethodException e) {
+      logger.error(e.getMessage(), e);
+    } catch (ClassNotFoundException e) {
+      logger.error(e.getMessage(), e);
+    } catch (IllegalAccessException e) {
+      logger.error(e.getMessage(), e);
+    } catch (InstantiationException e) {
+      logger.error(e.getMessage(), e);
+    } catch (InvocationTargetException e) {
+      logger.error(e.getMessage(), e);
+    }
+    return null;
+  }
+
+  // function works after intp is initialized
+  private boolean isScala2_10() {
+    try {
+      this.getClass().forName("org.apache.spark.repl.SparkIMain");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  private boolean isScala2_11() {
+    return !isScala2_11();
+  }
+
+
+  private Class findClass(String name) {
+    try {
+      return this.getClass().forName(name);
+    } catch (ClassNotFoundException e) {
+      logger.error(e.getMessage(), e);
       return null;
     }
   }

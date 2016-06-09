@@ -574,10 +574,10 @@ public class SparkInterpreter extends Interpreter {
           } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error(e.getMessage(), e);
           }
-        }
+       }
 
         completor = Utils.instantiateClass(
-            "SparkJLineCompletion",
+            "org.apache.spark.repl.SparkJLineCompletion",
             new Class[]{findClass("org.apache.spark.repl.SparkIMain")},
             new Object[]{intp});
       }
@@ -1130,8 +1130,6 @@ public class SparkInterpreter extends Interpreter {
   public SparkVersion getSparkVersion() {
     return sparkVersion;
   }
-
-
 
   private Class findClass(String name) {
     try {
