@@ -46,6 +46,7 @@ import org.apache.spark.scheduler.DAGScheduler;
 import org.apache.spark.scheduler.Pool;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.ui.jobs.JobProgressListener;
+import org.apache.spark.util.Utils;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterException;
@@ -448,7 +449,7 @@ public class SparkInterpreter extends Interpreter {
           new Object[]{ list });
 
       settings = (Settings) Utils.invokeMethod(sparkCommandLine, "settings");
-    } else {
+   } else {
       String sparkReplClassDir = getProperty("spark.repl.classdir");
       if (sparkReplClassDir == null) {
         sparkReplClassDir = System.getProperty("spark.repl.classdir");
@@ -576,10 +577,10 @@ public class SparkInterpreter extends Interpreter {
           }
        }
 
-        completor = Utils.instantiateClass(
-            "org.apache.spark.repl.SparkJLineCompletion",
-            new Class[]{findClass("org.apache.spark.repl.SparkIMain")},
-            new Object[]{intp});
+       completor = Utils.instantiateClass(
+           "org.apache.spark.repl.SparkJLineCompletion",
+           new Class[]{findClass("org.apache.spark.repl.SparkIMain")},
+           new Object[]{intp});
       }
 
       sc = getSparkContext();

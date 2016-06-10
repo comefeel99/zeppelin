@@ -188,7 +188,7 @@ public class DepInterpreter extends Interpreter {
     } else {
       binder = (Map<String, Object>) getLastObject();
     }
-   binder.put("depc", depc);
+    binder.put("depc", depc);
 
     interpret("@transient val z = "
         + "_binder.get(\"depc\")"
@@ -300,7 +300,7 @@ public class DepInterpreter extends Interpreter {
     } else {
       return new LinkedList<InterpreterCompletion>();
     }
- }
+  }
 
   private List<File> currentClassPath() {
     List<File> paths = classPath(Thread.currentThread().getContextClassLoader());
