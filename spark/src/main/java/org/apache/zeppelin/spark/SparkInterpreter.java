@@ -1192,4 +1192,40 @@ public class SparkInterpreter extends Interpreter {
       }
     }
   }
+
+  private File createTempDir(String dir) {
+    try {
+      return (File) invokeStaticMethod(
+          Utils.class,
+          "createTempDir",
+          new Class[]{String.class},
+          new Object[]{dir});
+    } catch (Exception e) {
+      return (File) invokeStaticMethod(
+          Utils.class,
+          "createTempDir",
+          new Class[]{String.class, String.class},
+          new Object[]{dir, "spark"});
+    }
+  }
+
+  private HttpServer createHttpServer(File outputDir) {
+    SparkConf conf = new SparkConf();
+
+    try {
+      return (HttpServer) instantiateClass(
+          HttpServer.class.getName(),
+          new Class[] { File.class, SecurityManager.class, Integer.class, String.class},
+          new Object[] { outputDir, new SecurityManager(conf), 0, "HTTP Server"}
+      );
+    } catch (Exception e) {
+      return (HttpServer) instantiateClass(
+          HttpServer.class.getName(),
+          new Class[] { SparkConf.class, File.class, SecurityManager.class, Integer.class,
+              String.class},
+          new Object[] { conf, outputDir, new SecurityManager(conf), 0, "HTTP Server"}
+      );
+    }
+  }
+
 }
