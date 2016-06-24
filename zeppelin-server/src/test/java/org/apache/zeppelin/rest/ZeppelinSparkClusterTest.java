@@ -233,6 +233,52 @@ public class ZeppelinSparkClusterTest extends AbstractTestRestApi {
         }
     }
 
+    @Test
+    public void sparkRDepLoaderTest() throws IOException {
+        // create new note
+        Note note = ZeppelinServer.notebook.createNote(null);
+
+        if (isPyspark() && getSparkVersionNumber(note) >= 14) {
+            // restart spark interpreter
+            List<InterpreterSetting> settings =
+                ZeppelinServer.notebook.getBindedInterpreterSettings(note.id());
+
+            for (InterpreterSetting setting : settings) {
+                if (setting.getGroup().equals("spark")) {
+                    ZeppelinServer.notebook.getInterpreterFactory().restart(setting.id());
+                    break;
+                }
+            }
+
+            // load dep
+            Paragraph p0 = note.addParagraph();
+            Map config = p0.getConfig();
+            config.put("enabled", true);
+            p0.setConfig(config);
+            p0.setText("%dep z.load(\"com.databricks:spark-csv_2.10:1.4.0\")");
+            note.run(p0.getId());
+            waitForFinish(p0);
+            assertEquals(Status.FINISHED, p0.getStatus());
+
+            // write test csv file
+            File tmpFile = File.createTempFile("test", "csv");
+            FileUtils.write(tmpFile, "a,b\n1,2");
+
+            // load data using libraries from dep loader
+            Paragraph p1 = note.addParagraph();
+            p1.setConfig(config);
+            p1.setText("%r\n" +
+                "count(read.df(sqlContext, \"" + tmpFile.getAbsolutePath() +
+                "\", \"com.databricks.spark.csv\"))");
+
+            waitForFinish(p1);
+            System.err.println("result = " + p1.getResult().message());
+            assertEquals(Status.FINISHED, p1.getStatus());
+            assertEquals("[1] 2\n", p1.getResult().message());
+        }
+    }
+
+
     /**
      * Get spark version number as a numerical value.
      * eg. 1.1.x => 11, 1.2.x => 12, 1.3.x => 13 ...
