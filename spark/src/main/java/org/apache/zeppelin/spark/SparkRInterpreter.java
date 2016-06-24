@@ -26,11 +26,17 @@ import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
+import org.apache.zeppelin.spark.dep.SparkDependencyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
@@ -60,6 +66,62 @@ public class SparkRInterpreter extends Interpreter {
       System.setProperty("spark.test.home", System.getenv("ZEPPELIN_HOME") + "/interpreter/spark");
     }
 
+    DepInterpreter depInterpreter = getDepInterpreter();
+
+    // load libraries from Dependency Interpreter
+    URL[] urls = new URL[0];
+    List<URL> urlList = new LinkedList<URL>();
+
+    if (depInterpreter != null) {
+      SparkDependencyContext depc = depInterpreter.getDependencyContext();
+      if (depc != null) {
+        List<File> files = depc.getFiles();
+        if (files != null) {
+          for (File f : files) {
+            try {
+              urlList.add(f.toURI().toURL());
+            } catch (MalformedURLException e) {
+              logger.error("Error", e);
+            }
+          }
+        }
+      }
+    }
+
+    String localRepo = getProperty("zeppelin.interpreter.localRepo");
+    if (localRepo != null) {
+      File localRepoDir = new File(localRepo);
+      if (localRepoDir.exists()) {
+        File[] files = localRepoDir.listFiles();
+        if (files != null) {
+          for (File f : files) {
+            try {
+              urlList.add(f.toURI().toURL());
+            } catch (MalformedURLException e) {
+              logger.error("Error", e);
+            }
+          }
+        }
+      }
+    }
+
+    urls = urlList.toArray(urls);
+
+    ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+    try {
+      URLClassLoader newCl = new URLClassLoader(urls, oldCl);
+      Thread.currentThread().setContextClassLoader(newCl);
+      initializeSparkRBackend(rCmdPath, sparkRLibPath);
+    } catch (Exception e) {
+      logger.error("Error", e);
+      throw new InterpreterException(e);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldCl);
+    }
+
+  }
+
+  private void initializeSparkRBackend(String rCmdPath, String sparkRLibPath) {
     synchronized (SparkRBackend.backend()) {
       if (!SparkRBackend.isStarted()) {
         SparkRBackend.init();
@@ -189,6 +251,20 @@ public class SparkRInterpreter extends Interpreter {
     }
     return spark;
   }
+
+
+  private DepInterpreter getDepInterpreter() {
+    Interpreter p = getInterpreterInTheSameSessionByClassName(DepInterpreter.class.getName());
+    if (p == null) {
+      return null;
+    }
+
+    while (p instanceof WrappedInterpreter) {
+      p = ((WrappedInterpreter) p).getInnerInterpreter();
+    }
+    return (DepInterpreter) p;
+  }
+
 
   private boolean useKnitr() {
     try {
