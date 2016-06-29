@@ -238,6 +238,10 @@ public class SparkInterpreterTest {
 
   @Test
   public void testEnableImplicitImport() {
+    if (repl.isScala2_11()) {
+      return;
+    }
+    
     // Set option of importing implicits to "true", and initialize new Spark repl
     Properties p = getSparkTestProperties();
     p.setProperty("zeppelin.spark.importImplicit", "true");
@@ -253,6 +257,10 @@ public class SparkInterpreterTest {
 
   @Test
   public void testDisableImplicitImport() {
+    if (repl.isScala2_11()) {
+      return;
+    }
+
     // Set option of importing implicits to "false", and initialize new Spark repl
     // this test should return error status when creating DataFrame from sequence
     Properties p = getSparkTestProperties();
