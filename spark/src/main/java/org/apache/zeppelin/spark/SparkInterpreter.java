@@ -193,6 +193,10 @@ public class SparkInterpreter extends Interpreter {
     return java.lang.Boolean.parseBoolean(getProperty("zeppelin.spark.useHiveContext"));
   }
 
+  private boolean importImplicit() {
+    return java.lang.Boolean.parseBoolean(getProperty("zeppelin.spark.importImplicit"));
+  }
+
   public SQLContext getSQLContext() {
     synchronized (sharedInterpreterLock) {
       if (sqlc == null) {
@@ -276,7 +280,7 @@ public class SparkInterpreter extends Interpreter {
           | IllegalArgumentException | InvocationTargetException e) {
         // continue instead of: throw new InterpreterException(e);
         // Newer Spark versions (like the patched CDH5.7.0 one) don't contain this method
-        logger.warn(String.format("Spark method classServerUri not available due to: [%s]", 
+        logger.warn(String.format("Spark method classServerUri not available due to: [%s]",
           e.getMessage()));
       }
     }
@@ -616,12 +620,14 @@ public class SparkInterpreter extends Interpreter {
               + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
       interpret("import org.apache.spark.SparkContext._");
 
-      if (sparkVersion.oldSqlContextImplicits()) {
-        interpret("import sqlContext._");
-      } else {
-        interpret("import sqlContext.implicits._");
-        interpret("import sqlContext.sql");
-        interpret("import org.apache.spark.sql.functions._");
+      if (importImplicit()) {
+        if (sparkVersion.oldSqlContextImplicits()) {
+          interpret("import sqlContext._");
+        } else {
+          interpret("import sqlContext.implicits._");
+          interpret("import sqlContext.sql");
+          interpret("import org.apache.spark.sql.functions._");
+        }
       }
     }
 

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterResult;
@@ -98,6 +99,9 @@ public class JDBCInterpreter extends Interpreter {
   static final String DEFAULT_PASSWORD = DEFAULT_KEY + DOT + PASSWORD_KEY;
 
   static final String EMPTY_COLUMN_VALUE = "";
+
+  private final String CONCURRENT_EXECUTION_KEY = "zeppelin.jdbc.concurrent.use";
+  private final String CONCURRENT_EXECUTION_COUNT = "zeppelin.jdbc.concurrent.max_connection";
 
   private final HashMap<String, Properties> propertiesMap;
   private final Map<String, Statement> paragraphIdStatementMap;
@@ -358,12 +362,11 @@ public class JDBCInterpreter extends Interpreter {
 
       return new InterpreterResult(Code.SUCCESS, msg.toString());
 
-    } catch (SQLException ex) {
-      logger.error("Cannot run " + sql, ex);
-      return new InterpreterResult(Code.ERROR, ex.getMessage());
-    } catch (ClassNotFoundException e) {
+    } catch (Exception e) {
       logger.error("Cannot run " + sql, e);
-      return new InterpreterResult(Code.ERROR, e.getMessage());
+      StringBuilder stringBuilder = new StringBuilder(e.getClass().toString()).append("\n");
+      stringBuilder.append(StringUtils.join(e.getStackTrace(), "\n"));
+      return new InterpreterResult(Code.ERROR, stringBuilder.toString());
     }
   }
 
@@ -434,8 +437,10 @@ public class JDBCInterpreter extends Interpreter {
 
   @Override
   public Scheduler getScheduler() {
-    return SchedulerFactory.singleton().createOrGetFIFOScheduler(
-        JDBCInterpreter.class.getName() + this.hashCode());
+    String schedulerName = JDBCInterpreter.class.getName() + this.hashCode();
+    return isConcurrentExecution() ?
+            SchedulerFactory.singleton().createOrGetParallelScheduler(schedulerName, 10)
+            : SchedulerFactory.singleton().createOrGetFIFOScheduler(schedulerName);
   }
 
   @Override
@@ -453,6 +458,18 @@ public class JDBCInterpreter extends Interpreter {
   public int getMaxResult() {
     return Integer.valueOf(
         propertiesMap.get(COMMON_KEY).getProperty(MAX_LINE_KEY, MAX_LINE_DEFAULT));
+  }
+
+  boolean isConcurrentExecution() {
+    return Boolean.valueOf(getProperty(CONCURRENT_EXECUTION_KEY));
+  }
+
+  int getMaxConcurrentConnection() {
+    try {
+      return Integer.valueOf(getProperty(CONCURRENT_EXECUTION_COUNT));
+    } catch (Exception e) {
+      return 10;
+    }
   }
 }
 
