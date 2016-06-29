@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.dep.Dependency;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
 import org.apache.zeppelin.interpreter.InterpreterOption;
@@ -99,6 +100,28 @@ public abstract class AbstractTestRestApi {
   protected static void startUp() throws Exception {
     if (!wasRunning) {
       LOG.info("Staring test Zeppelin up...");
+
+      // exclude org.apache.zeppelin.rinterpreter.* for scala 2.11 test
+      ZeppelinConfiguration conf = ZeppelinConfiguration.create();
+      String interpreters = conf.getString(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETERS);
+      String interpretersCompatibleWithScala211Test = null;
+
+      for (String intp : interpreters.split(",")) {
+        if (intp.startsWith("org.apache.zeppelin.rinterpreter")) {
+          continue;
+        }
+
+        if (interpretersCompatibleWithScala211Test == null) {
+          interpretersCompatibleWithScala211Test = intp;
+        } else {
+          interpretersCompatibleWithScala211Test += "," + intp;
+        }
+      }
+
+      System.setProperty(
+          ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETERS.getVarName(),
+          interpretersCompatibleWithScala211Test);
+
       executor = Executors.newSingleThreadExecutor();
       executor.submit(server);
       long s = System.currentTimeMillis();
@@ -181,20 +204,6 @@ public abstract class AbstractTestRestApi {
     return sparkR;
   }
 
-  // function works after intp is initialized
-  boolean isScala2_10() {
-    try {
-      this.getClass().forName("org.apache.spark.repl.SparkIMain");
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
-  }
-
-  boolean isScala2_11() {
-    return !isScala2_10();
-  }
-
   private static String getSparkHomeRecursively(File dir) {
     if (dir == null) return null;
     File files []  = dir.listFiles();
@@ -252,6 +261,8 @@ public abstract class AbstractTestRestApi {
       }
 
       LOG.info("Test Zeppelin terminated.");
+
+      System.clearProperty(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETERS.getVarName());
     }
   }
 
