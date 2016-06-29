@@ -554,7 +554,7 @@ public class SparkInterpreter extends Interpreter {
 
       interpreter.createInterpreter();
 
-      intp = interpreter.intp();
+      intp = invokeMethod(interpreter, "intp");
 
       if (isScala2_10()) {
         invokeMethod(intp, "setContextClassLoader");

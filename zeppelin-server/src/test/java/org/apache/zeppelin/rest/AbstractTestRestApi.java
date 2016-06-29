@@ -181,6 +181,20 @@ public abstract class AbstractTestRestApi {
     return sparkR;
   }
 
+  // function works after intp is initialized
+  boolean isScala2_10() {
+    try {
+      this.getClass().forName("org.apache.spark.repl.SparkIMain");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  boolean isScala2_11() {
+    return !isScala2_10();
+  }
+
   private static String getSparkHomeRecursively(File dir) {
     if (dir == null) return null;
     File files []  = dir.listFiles();
