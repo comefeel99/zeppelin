@@ -219,20 +219,18 @@ public class SparkInterpreterTest {
 
   @Test
   public void shareSingleSparkContext() throws InterruptedException {
-    if (repl.isScala2_10()) {
-      // create another SparkInterpreter
-      SparkInterpreter repl2 = new SparkInterpreter(getSparkTestProperties());
-      repl2.setInterpreterGroup(intpGroup);
-      intpGroup.get("note").add(repl2);
-      repl2.open();
+    // create another SparkInterpreter
+    SparkInterpreter repl2 = new SparkInterpreter(getSparkTestProperties());
+    repl2.setInterpreterGroup(intpGroup);
+    intpGroup.get("note").add(repl2);
+    repl2.open();
 
-      assertEquals(Code.SUCCESS,
-          repl.interpret("print(sc.parallelize(1 to 10).count())", context).code());
-      assertEquals(Code.SUCCESS,
-          repl2.interpret("print(sc.parallelize(1 to 10).count())", context).code());
+    assertEquals(Code.SUCCESS,
+        repl.interpret("print(sc.parallelize(1 to 10).count())", context).code());
+    assertEquals(Code.SUCCESS,
+        repl2.interpret("print(sc.parallelize(1 to 10).count())", context).code());
 
-      repl2.close();
-    }
+    repl2.close();
   }
 
   @Test
