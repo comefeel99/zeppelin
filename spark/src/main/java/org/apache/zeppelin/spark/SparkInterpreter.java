@@ -566,7 +566,7 @@ public class SparkInterpreter extends Interpreter {
           new Object[]{ list });
 
       settings = (Settings) Utils.invokeMethod(sparkCommandLine, "settings");
-   } else {
+    } else {
       String sparkReplClassDir = getProperty("spark.repl.classdir");
       if (sparkReplClassDir == null) {
         sparkReplClassDir = System.getProperty("spark.repl.classdir");
@@ -704,12 +704,12 @@ public class SparkInterpreter extends Interpreter {
           } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error(e.getMessage(), e);
           }
-       }
+        }
 
-       completor = Utils.instantiateClass(
-           "org.apache.spark.repl.SparkJLineCompletion",
-           new Class[]{findClass("org.apache.spark.repl.SparkIMain")},
-           new Object[]{intp});
+        completor = Utils.instantiateClass(
+            "org.apache.spark.repl.SparkJLineCompletion",
+            new Class[]{findClass("org.apache.spark.repl.SparkIMain")},
+            new Object[]{intp});
       }
 
       if (isSpark2()) {

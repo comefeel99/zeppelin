@@ -171,7 +171,7 @@ public class DepInterpreter extends Interpreter {
     if (Utils.isScala2_10()) {
       Utils.invokeMethod(intp, "setContextClassLoader");
       Utils.invokeMethod(intp, "initializeSynchronous");
-   }
+    }
 
     depc = new SparkDependencyContext(getProperty("zeppelin.dep.localrepo"),
                                  getProperty("zeppelin.dep.additionalRemoteRepository"));
