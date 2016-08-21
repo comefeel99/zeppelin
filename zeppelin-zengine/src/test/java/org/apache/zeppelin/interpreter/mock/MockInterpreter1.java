@@ -67,7 +67,11 @@ Map<String, Object> vars = new HashMap<String, Object>();
 				// nothing to do
 			}
 			result = new InterpreterResult(InterpreterResult.Code.SUCCESS, "repl1: " + st);
-		} else {
+		} else if (st.startsWith("getEnv")) {
+				return new InterpreterResult(InterpreterResult.Code.SUCCESS, System.getenv(st.split(" ")[1]));
+			} else if (st.startsWith("getProperty")){
+				return new InterpreterResult(InterpreterResult.Code.SUCCESS, System.getProperty(st.split(" ")[1]));
+			} else {
 			result = new InterpreterResult(InterpreterResult.Code.SUCCESS, "repl1: " + st);
 		}
 

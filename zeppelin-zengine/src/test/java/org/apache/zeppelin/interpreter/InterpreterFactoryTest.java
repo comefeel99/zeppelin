@@ -26,6 +26,7 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.dep.Dependency;
 import org.apache.zeppelin.dep.DependencyResolver;
+import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter1;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter2;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreter;
@@ -56,17 +57,31 @@ public class InterpreterFactoryTest {
     MockInterpreter1.register("mock1", "mock1", "org.apache.zeppelin.interpreter.mock.MockInterpreter1", propertiesMockInterpreter1);
     MockInterpreter2.register("mock2", "org.apache.zeppelin.interpreter.mock.MockInterpreter2");
 
-    System.setProperty(ConfVars.ZEPPELIN_HOME.getVarName(), tmpDir.getAbsolutePath());
+    File home = new File(getClass().getClassLoader().getResource("note").getFile()) // zeppelin/zeppelin-zengine/target/test-classes/note
+        .getParentFile()               // zeppelin/zeppelin-zengine/target/test-classes
+        .getParentFile()               // zeppelin/zeppelin-zengine/target
+        .getParentFile()               // zeppelin/zeppelin-zengine
+        .getParentFile();              // zeppelin
+
+    System.setProperty(ZeppelinConfiguration.ConfVars.ZEPPELIN_HOME.getVarName(), home.getAbsolutePath());
+    System.setProperty(ZeppelinConfiguration.ConfVars.ZEPPELIN_CONF_DIR.getVarName(), tmpDir.getAbsolutePath() + "/conf");
     System.setProperty(ConfVars.ZEPPELIN_INTERPRETERS.getVarName(), "org.apache.zeppelin.interpreter.mock.MockInterpreter1,org.apache.zeppelin.interpreter.mock.MockInterpreter2");
     conf = new ZeppelinConfiguration();
     depResolver = new DependencyResolver(tmpDir.getAbsolutePath() + "/local-repo");
     factory = new InterpreterFactory(conf, new InterpreterOption(false), null, null, null, depResolver);
-    context = new InterpreterContext("note", "id", "title", "text", null, null, null, null, null, null, null);
+    context = new InterpreterContext("note", "id", "title", "text", null,
+        new HashMap<String, Object>(),
+        new GUI(),
+        null,
+        null,
+        new LinkedList<InterpreterContextRunner>(), null);
   }
 
   @After
   public void tearDown() throws Exception {
     FileUtils.deleteDirectory(tmpDir);
+    System.setProperty(ZeppelinConfiguration.ConfVars.ZEPPELIN_CONF_DIR.getVarName(),
+        ZeppelinConfiguration.ConfVars.ZEPPELIN_CONF_DIR.getStringValue());
   }
 
   @Test
@@ -109,14 +124,13 @@ public class InterpreterFactoryTest {
     }
     InterpreterGroup interpreterGroup = mock1Setting.getInterpreterGroup("sharedProcess");
     factory.createInterpretersForNote(mock1Setting, "sharedProcess", "session");
-    // get interpreter
-    assertNotNull("get Interpreter", interpreterGroup.get("session").get(0));
-    assertTrue(interpreterGroup.get("session").get(0) instanceof LazyOpenInterpreter);
-    LazyOpenInterpreter lazyInterpreter = (LazyOpenInterpreter)(interpreterGroup.get("session").get(0));
-    assertTrue(lazyInterpreter.getInnerInterpreter() instanceof RemoteInterpreter);
-    RemoteInterpreter remoteInterpreter = (RemoteInterpreter) lazyInterpreter.getInnerInterpreter();
-    assertEquals("VALUE_1", remoteInterpreter.getEnv().get("PROPERTY_1"));
-    assertEquals("value_2", remoteInterpreter.getProperty("property_2"));
+
+    // check env and property from actual remote process
+    Interpreter interpreter = interpreterGroup.get("session").get(0);
+    interpreter.open();
+    assertEquals("VALUE_1", interpreter.interpret("getEnv PROPERTY_1", context).message());
+    assertEquals("value_2", interpreter.interpret("getProperty property_2", context).message());
+    interpreter.close();
   }
 
   @Test
