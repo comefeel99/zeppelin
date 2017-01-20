@@ -384,6 +384,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
     fis.close();
 
     String json = sb.toString();
+    logger.debug("interpreter.json read\n{}", json);
     InterpreterInfoSaving infoSaving = gson.fromJson(json, InterpreterInfoSaving.class);
 
     for (String k : infoSaving.interpreterSettings.keySet()) {
