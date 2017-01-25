@@ -38,30 +38,30 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkEnv;
 
 import org.apache.spark.SecurityManager;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.repl.SparkILoop;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.DAGScheduler;
 import org.apache.spark.scheduler.Pool;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.ui.SparkUI;
 import org.apache.spark.ui.jobs.JobProgressListener;
-import org.apache.zeppelin.interpreter.Interpreter;
-import org.apache.zeppelin.interpreter.InterpreterContext;
-import org.apache.zeppelin.interpreter.InterpreterException;
-import org.apache.zeppelin.interpreter.InterpreterHookRegistry;
-import org.apache.zeppelin.interpreter.InterpreterProperty;
-import org.apache.zeppelin.interpreter.InterpreterResult;
+import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
-import org.apache.zeppelin.interpreter.InterpreterUtils;
-import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.interpreter.util.InterpreterOutputStream;
+import org.apache.zeppelin.resource.Resource;
 import org.apache.zeppelin.resource.ResourcePool;
+import org.apache.zeppelin.resource.ResourceSet;
 import org.apache.zeppelin.resource.WellKnownResourceName;
 import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
+import org.apache.zeppelin.spark.datasource.DefaultSource;
 import org.apache.zeppelin.spark.dep.SparkDependencyContext;
 import org.apache.zeppelin.spark.dep.SparkDependencyResolver;
+import org.apache.zeppelin.tabledata.InterpreterResultTableData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1144,6 +1144,8 @@ public class SparkInterpreter extends Interpreter {
       linesToRun[i] = lines[i];
     }
 
+    registerResourcesAsTable(context.getResourcePool());
+
     Console.setOut(context.out);
     out.setInterpreterOutput(context.out);
     context.out.clear();
@@ -1505,4 +1507,29 @@ public class SparkInterpreter extends Interpreter {
     }
     return securityManager;
   }
+
+  public void registerResourcesAsTable(ResourcePool pool) {
+    ResourceSet resources = pool.getAll();
+    DefaultSource.resourcePool = pool;
+
+    ResourceSet tableMessageResults = resources.filterByName(
+        WellKnownResourceName.ZeppelinTableResult.toString());
+
+    java.util.Iterator<Resource> it = tableMessageResults.iterator();
+    while (it.hasNext()) {
+      Resource r = it.next();
+      String tableName = "result_" + r.getResourceId().getNoteId() + "_" +
+          r.getResourceId().getParagraphId();
+
+      Dataset<Row> dataset = getSQLContext()
+          .read()
+          .format("org.apache.zeppelin.spark.datasource")
+          .load(r.getResourceId().getNoteId() + "|" + r.getResourceId().getParagraphId());
+
+      tableName = tableName.replaceAll("-", "_");
+      logger.info("Create temp view {}", tableName);
+      dataset.createOrReplaceTempView(tableName);
+    }
+  }
+
 }

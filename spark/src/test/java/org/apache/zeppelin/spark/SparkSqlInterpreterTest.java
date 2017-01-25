@@ -23,6 +23,7 @@ import java.util.Properties;
 
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.resource.LocalResourcePool;
+import org.apache.zeppelin.resource.WellKnownResourceName;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.interpreter.*;
@@ -44,6 +45,7 @@ public class SparkSqlInterpreterTest {
   private SparkInterpreter repl;
   private InterpreterContext context;
   private InterpreterGroup intpGroup;
+  private LocalResourcePool pool;
 
   @Before
   public void setUp() throws Exception {
@@ -76,10 +78,12 @@ public class SparkSqlInterpreterTest {
       sql.setInterpreterGroup(intpGroup);
       sql.open();
     }
+
+    pool = new LocalResourcePool("id");
     context = new InterpreterContext("note", "id", null, "title", "text", new AuthenticationInfo(),
         new HashMap<String, Object>(), new GUI(),
         new AngularObjectRegistry(intpGroup.getId(), null),
-        new LocalResourcePool("id"),
+        pool,
         new LinkedList<InterpreterContextRunner>(), new InterpreterOutput(null));
   }
 
@@ -162,5 +166,16 @@ public class SparkSqlInterpreterTest {
     assertEquals(InterpreterResult.Code.SUCCESS, ret.code());
     assertEquals(Type.TABLE, ret.message().get(0).getType());
     assertEquals("name\tage\ngates\tnull\n", ret.message().get(0).getData());
+  }
+
+  @Test
+  public void testSparkQueryResourcePool() {
+    InterpreterResultMessage result = new InterpreterResultMessage(
+        Type.TABLE,
+        "key\tvalue\nsun\t100\nmoon\t200");
+    pool.put("noteId", "paragraphId",
+        WellKnownResourceName.ZeppelinTableResult.toString(), result);
+    InterpreterResult ret = sql.interpret("select * from result_noteid_paragraphid", context);
+    assertEquals("key\tvalue\nsun\t100\nmoon\t200", ret.message().get(0).getData());
   }
 }

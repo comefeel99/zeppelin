@@ -121,7 +121,7 @@ public class SparkRInterpreter extends Interpreter {
         lines = lines.replace(jsonConfig, "");
       }
     }
-
+    sparkInterpreter.registerResourcesAsTable(interpreterContext.getResourcePool());
     String jobGroup = getJobGroup(interpreterContext);
     String setJobGroup = "";
     // assign setJobGroup to dummy__, otherwise it would print NULL for this statement

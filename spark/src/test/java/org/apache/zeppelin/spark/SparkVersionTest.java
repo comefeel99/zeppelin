@@ -16,9 +16,15 @@
  */
 package org.apache.zeppelin.spark;
 
+import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Scope.row;
 import static org.junit.Assert.*;
 
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.types.StructType;
+import org.apache.zeppelin.tabledata.Row;
 import org.junit.Test;
+import scala.collection.JavaConversions;
 
 public class SparkVersionTest {
 

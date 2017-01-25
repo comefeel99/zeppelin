@@ -105,6 +105,7 @@ public class SparkSqlInterpreter extends Interpreter {
       sc.setLocalProperty("spark.scheduler.pool", null);
     }
 
+    sparkInterpreter.registerResourcesAsTable(context.getResourcePool());
     sc.setJobGroup(getJobGroup(context), "Zeppelin", false);
     Object rdd = null;
     try {
