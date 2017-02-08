@@ -50,19 +50,19 @@ matrix:
 
     # Test spark module for 1.6.3 with scala 2.10
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Psparkr -Pscala-2.10" BUILD_FLAG="package -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=org.apache.zeppelin.rest.ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
+      env: SCALA_VER="2.10" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Psparkr -Pscala-2.10" BUILD_FLAG="package -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
 
     # Test spark module for 1.6.3 with scala 2.11
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.11" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Psparkr -Pscala-2.11" BUILD_FLAG="package -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=org.apache.zeppelin.rest.ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
+      env: SCALA_VER="2.11" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Psparkr -Pscala-2.11" BUILD_FLAG="package -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
 
     # Test spark module for 1.5.2
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" SPARK_VER="1.5.2" HADOOP_VER="2.6" PROFILE="-Pspark-1.5 -Pr -Phadoop-2.6 -Ppyspark -Psparkr" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark,r -Dtest=org.apache.zeppelin.rest.ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
+      env: SCALA_VER="2.10" SPARK_VER="1.5.2" HADOOP_VER="2.6" PROFILE="-Pspark-1.5 -Pr -Phadoop-2.6 -Ppyspark -Psparkr" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark,r -Dtest=ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
 
     # Test spark module for 1.4.1
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" SPARK_VER="1.4.1" HADOOP_VER="2.6" PROFILE="-Pspark-1.4 -Pr -Phadoop-2.6 -Ppyspark -Psparkr" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark,r -Dtest=org.apache.zeppelin.rest.ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
+      env: SCALA_VER="2.10" SPARK_VER="1.4.1" HADOOP_VER="2.6" PROFILE="-Pspark-1.4 -Pr -Phadoop-2.6 -Ppyspark -Psparkr" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="-pl zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark,r -Dtest=ZeppelinSparkClusterTest,org.apache.zeppelin.spark.* -DfailIfNoTests=false"
 
     # Test selenium with spark module for 1.6.3
     - jdk: "oraclejdk7"
