@@ -108,6 +108,8 @@ public class PySparkInterpreterTest {
   @Test
   public void testBasicIntp() {
     if (getSparkVersionNumber() > 11) {
+      System.out.println("basicIntp: " + pySparkInterpreter.interpret("a = 1\n", context)
+          .message());
       assertEquals(InterpreterResult.Code.SUCCESS,
         pySparkInterpreter.interpret("a = 1\n", context).code());
     }
