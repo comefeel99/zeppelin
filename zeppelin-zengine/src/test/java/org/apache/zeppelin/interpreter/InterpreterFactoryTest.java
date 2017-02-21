@@ -176,7 +176,8 @@ public class InterpreterFactoryTest {
    * @throws Exception
    */
   @Test
-  public void testRestartInterpreterInScopedMode() throws Exception {
+  public void testRestartInterpreterInPerUserScopedMode() throws Exception {
+    // Get interpreter setting for mock1
     interpreterSettingManager = new InterpreterSettingManager(conf, depResolver, new InterpreterOption(true));
     factory = new InterpreterFactory(conf, null, null, null, depResolver, false, interpreterSettingManager);
     List<InterpreterSetting> all = interpreterSettingManager.get();
@@ -187,22 +188,81 @@ public class InterpreterFactoryTest {
         break;
       }
     }
+
+    // configure interpreter setting
     mock1Setting.getOption().setPerUser("scoped");
     mock1Setting.getOption().setPerNote("shared");
-    // set remote as false so that we won't create new remote interpreter process
-    mock1Setting.getOption().setRemote(false);
+    mock1Setting.getOption().setRemote(false); // set remote as false so that we won't create new remote interpreter process
     mock1Setting.getOption().setHost("localhost");
     mock1Setting.getOption().setPort(2222);
-    InterpreterGroup interpreterGroup = mock1Setting.getInterpreterGroup("user1", "sharedProcess");
-    factory.createInterpretersForNote(mock1Setting, "user1", "sharedProcess", "user1");
-    factory.createInterpretersForNote(mock1Setting, "user2", "sharedProcess", "user2");
 
-    LazyOpenInterpreter interpreter1 = (LazyOpenInterpreter)interpreterGroup.get("user1").get(0);
+    // create interpretergroup for user1 and user2
+    InterpreterGroup interpreterGroup1 = mock1Setting.getInterpreterGroup("user1", "note1");
+    InterpreterGroup interpreterGroup2 = mock1Setting.getInterpreterGroup("user2", "note1");
+
+    // runs in the same interpreter process
+    assertEquals(interpreterGroup1.getId(), interpreterGroup2.getId());
+
+    String sessionKey1 = interpreterSettingManager.getInterpreterSessionKey("user1", "note1", mock1Setting);
+    String sessionKey2 = interpreterSettingManager.getInterpreterSessionKey("user2", "note1", mock1Setting);
+
+    factory.createInterpretersForNote(mock1Setting, "user1", "note1", sessionKey1);
+    factory.createInterpretersForNote(mock1Setting, "user2", "note1", sessionKey2);
+
+    LazyOpenInterpreter interpreter1 = (LazyOpenInterpreter)interpreterGroup1.get(sessionKey1).get(0);
     interpreter1.open();
-    LazyOpenInterpreter interpreter2 = (LazyOpenInterpreter)interpreterGroup.get("user2").get(0);
+    LazyOpenInterpreter interpreter2 = (LazyOpenInterpreter)interpreterGroup2.get(sessionKey2).get(0);
     interpreter2.open();
 
-    mock1Setting.closeAndRemoveInterpreterGroupByUser("user1");
+    interpreterSettingManager.restart(mock1Setting.getId(), "note1", "user1");
+    assertFalse(interpreter1.isOpen());
+    assertTrue(interpreter2.isOpen());
+  }
+
+  /**
+   * 2 users' interpreters in scoped mode. Each note has one session. Restarting note1's interpreter
+   * won't affect note2's interpreter
+   * @throws Exception
+   */
+  @Test
+  public void testRestartInterpreterInPerNoteScopedMode() throws Exception {
+    // Get interpreter setting for mock1
+    interpreterSettingManager = new InterpreterSettingManager(conf, depResolver, new InterpreterOption(true));
+    factory = new InterpreterFactory(conf, null, null, null, depResolver, false, interpreterSettingManager);
+    List<InterpreterSetting> all = interpreterSettingManager.get();
+    InterpreterSetting mock1Setting = null;
+    for (InterpreterSetting setting : all) {
+      if (setting.getName().equals("mock1")) {
+        mock1Setting = setting;
+        break;
+      }
+    }
+
+    // configure interpreter setting
+    mock1Setting.getOption().setPerUser("shared");
+    mock1Setting.getOption().setPerNote("scoped");
+    mock1Setting.getOption().setRemote(false);     // set remote as false so that we won't create new remote interpreter process
+    mock1Setting.getOption().setHost("localhost");
+    mock1Setting.getOption().setPort(2222);
+
+    // create interpretergroup for note1 and note2
+    InterpreterGroup interpreterGroup1 = mock1Setting.getInterpreterGroup("user1", "note1");
+    InterpreterGroup interpreterGroup2 = mock1Setting.getInterpreterGroup("user1", "note2");
+
+    // runs in the same interpreter process
+    assertEquals(interpreterGroup1.getId(), interpreterGroup2.getId());
+
+    String sessionKey1 = interpreterSettingManager.getInterpreterSessionKey("user1", "note1", mock1Setting);
+    String sessionKey2 = interpreterSettingManager.getInterpreterSessionKey("user1", "note2", mock1Setting);
+    factory.createInterpretersForNote(mock1Setting, "user1", "note1", sessionKey1);
+    factory.createInterpretersForNote(mock1Setting, "user1", "note2", sessionKey2);
+
+    LazyOpenInterpreter interpreter1 = (LazyOpenInterpreter)interpreterGroup1.get(sessionKey1).get(0);
+    interpreter1.open();
+    LazyOpenInterpreter interpreter2 = (LazyOpenInterpreter)interpreterGroup2.get(sessionKey2).get(0);
+    interpreter2.open();
+
+    interpreterSettingManager.restart(mock1Setting.getId(), "note1", "user1");
     assertFalse(interpreter1.isOpen());
     assertTrue(interpreter2.isOpen());
   }

@@ -164,9 +164,15 @@ public class InterpreterGroup extends ConcurrentHashMap<String, List<Interpreter
    * @param sessionId
    */
   public void close(String sessionId) {
-    LOGGER.info("Close interpreter group " + getId() + " for session: " + sessionId);
     List<Interpreter> intpForSession = this.get(sessionId);
+    if (intpForSession == null) {
+      LOGGER.error("Try to remove session " + sessionId + " not exists");
+      return;
+    }
+
+    LOGGER.info("Close interpreter group " + getId() + " for session: " + sessionId);
     close(intpForSession);
+    this.remove(sessionId);
 
     if (remoteInterpreterProcess != null) {
       remoteInterpreterProcess.dereference();

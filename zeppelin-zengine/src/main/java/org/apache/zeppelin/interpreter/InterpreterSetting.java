@@ -69,7 +69,7 @@ public class InterpreterSetting {
 
   @SerializedName("interpreterGroup")
   private List<InterpreterInfo> interpreterInfos;
-  private final transient Map<String, InterpreterGroup> interpreterGroupRef = new HashMap<>();
+  final transient Map<String, InterpreterGroup> interpreterGroupRef = new HashMap<>();
   private List<Dependency> dependencies;
   private InterpreterOption option;
   private transient String path;
@@ -134,7 +134,7 @@ public class InterpreterSetting {
     return group;
   }
 
-  private String getInterpreterProcessKey(String user, String noteId) {
+  String getInterpreterProcessKey(String user, String noteId) {
     InterpreterOption option = getOption();
     String key;
     if (getOption().isExistingProcess) {
@@ -177,7 +177,7 @@ public class InterpreterSetting {
     }
   }
 
-  private String getInterpreterSessionKey(String user, String noteId) {
+  String getInterpreterSessionKey(String user, String noteId) {
     InterpreterOption option = getOption();
     String key;
     if (option.isExistingProcess()) {
@@ -250,19 +250,25 @@ public class InterpreterSetting {
     }
     String processKey = getInterpreterProcessKey(user, "");
     String sessionKey = getInterpreterSessionKey(user, "");
-    List<InterpreterGroup> groupToRemove = new LinkedList<>();
+    Map<String, InterpreterGroup> groupToRemove = new HashMap<>();
     InterpreterGroup groupItem;
     for (String intpKey : new HashSet<>(interpreterGroupRef.keySet())) {
       if (isEqualInterpreterKeyProcessKey(intpKey, processKey)) {
-        interpreterGroupWriteLock.lock();
-        groupItem = interpreterGroupRef.remove(intpKey);
-        interpreterGroupWriteLock.unlock();
-        groupToRemove.add(groupItem);
+        interpreterGroupReadLock.lock();
+        groupItem = interpreterGroupRef.get(intpKey);
+        interpreterGroupReadLock.unlock();
+        groupToRemove.put(intpKey, groupItem);
       }
     }
 
-    for (InterpreterGroup groupToClose : groupToRemove) {
+    for (String intpKey : groupToRemove.keySet()) {
+      InterpreterGroup groupToClose = groupToRemove.get(intpKey);
       groupToClose.close(sessionKey);
+      if (groupToClose.size() == 0) {
+        interpreterGroupWriteLock.lock();
+        interpreterGroupRef.remove(intpKey);
+        interpreterGroupWriteLock.unlock();
+      }
     }
   }
 
