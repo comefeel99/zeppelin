@@ -42,15 +42,15 @@ matrix:
     # Test all modules (exclude spark) with scala 2.11
     - sudo: required
       jdk: "oraclejdk7"
-      env: SCALA_VER="2.11" LIVY_VER="0.3.0" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.11 -Plivy-0.3" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='!spark-dependencies,!spark' TEST_PROJECTS="-Dzeppelin-server.test.excludes=ZeppelinSparkClusterTest"
+      env: SCALA_VER="2.11" LIVY_VER="0.3.0" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.11 -Plivy-0.3" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark"' TEST_PROJECTS="-Dzeppelin-server.test.excludes=ZeppelinSparkClusterTest"
 
     # Test all modules (exclude spark) with scala 2.10
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='!spark-dependencies,!spark' TEST_PROJECTS=""
+      env: SCALA_VER="2.10" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark"' TEST_PROJECTS=""
 
     # Test selenium with spark module for 1.6.3
     - jdk: "oraclejdk7"
-      env: TEST_SELENIUM="true" SCALA_VER="2.10" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Phelium-dev -Pexamples" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" MODULES='!zeppelin-distribution' TEST_PROJECTS="zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=org.apache.zeppelin.AbstractFunctionalSuite -DfailIfNoTests=false"
+      env: TEST_SELENIUM="true" SCALA_VER="2.10" SPARK_VER="1.6.3" HADOOP_VER="2.6" PROFILE="-Pspark-1.6 -Phadoop-2.6 -Ppyspark -Phelium-dev -Pexamples" BUILD_FLAG="package -DskipTests -DskipRat" TEST_FLAG="verify -DskipRat" TEST_PROJECTS="zeppelin-interpreter,zeppelin-zengine,zeppelin-server,zeppelin-display,spark-dependencies,spark -Dtest=org.apache.zeppelin.AbstractFunctionalSuite -DfailIfNoTests=false"
 
     # Test spark module for 2.1.2 with scala 2.11
     - sudo: required
@@ -89,7 +89,7 @@ before_install:
   - source ~/.environ
 
 install:
-  - mvn $BUILD_FLAG -pl "$MODULES" $PROFILE -B
+  - mvn $BUILD_FLAG $MODULES $PROFILE -B
 
 before_script:
   - if [[ ! -z $SPARK_VER ]]; then travis_retry ./testing/downloadSpark.sh $SPARK_VER $HADOOP_VER; fi
@@ -101,7 +101,7 @@ before_script:
   - tail conf/zeppelin-env.sh
 
 script:
-  - mvn $TEST_FLAG -pl "$MODULES" $PROFILE -B $TEST_PROJECTS
+  - mvn $TEST_FLAG $MODULES $PROFILE -B $TEST_PROJECTS
 
 after_success:
   - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
