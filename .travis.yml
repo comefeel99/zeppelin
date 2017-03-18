@@ -46,7 +46,7 @@ matrix:
 
     # Test all modules (exclude spark,livy) with scala 2.10
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" LIVY_VER="0.2.0" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10 -Plivy-0.2" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark,!livy"' TEST_PROJECTS=""
+      env: SCALA_VER="2.10" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark,!livy"' TEST_PROJECTS=""
 
     # Test selenium with spark module for 1.6.3
     - jdk: "oraclejdk7"
