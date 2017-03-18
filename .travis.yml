@@ -46,7 +46,7 @@ matrix:
 
     # Test all modules (exclude spark) with scala 2.10
     - jdk: "oraclejdk7"
-      env: SCALA_VER="2.10" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark"' TEST_PROJECTS=""
+      env: SCALA_VER="2.10" LIVY_VER="0.2.0" PROFILE="-Pscalding -Phelium-dev -Pexamples -Pscala-2.10 -Plivy-0.2" BUILD_FLAG="package -Pbuild-distr -DskipRat" TEST_FLAG="verify -Pusing-packaged-distr -DskipRat" MODULES='-pl "!spark-dependencies,!spark"' TEST_PROJECTS=""
 
     # Test selenium with spark module for 1.6.3
     - jdk: "oraclejdk7"
@@ -92,7 +92,7 @@ install:
   - mvn $BUILD_FLAG $MODULES $PROFILE -B
 
 before_script:
-  - if [[ ! -z $SPARK_VER ]]; then travis_retry ./testing/downloadSpark.sh $SPARK_VER $HADOOP_VER; fi
+  - if [[ -n $SPARK_VER ]]; then travis_retry ./testing/downloadSpark.sh $SPARK_VER $HADOOP_VER; fi
   - if [[ -n $LIVY_VER ]]; then ./testing/downloadLivy.sh $LIVY_VER; fi
   - if [[ -n $LIVY_VER ]]; then export LIVY_HOME=`pwd`/livy-server-$LIVY_VER; fi
   - if [[ -n $LIVY_VER ]]; then export SPARK_HOME=`pwd`/spark-$SPARK_VER-bin-hadoop$HADOOP_VER; fi
