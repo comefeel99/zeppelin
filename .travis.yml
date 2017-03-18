@@ -89,7 +89,7 @@ before_install:
   - source ~/.environ
 
 install:
-  - mvn $BUILD_FLAG -pl $MODULES $PROFILE -B
+  - mvn $BUILD_FLAG -pl "$MODULES" $PROFILE -B
 
 before_script:
   - travis_retry ./testing/downloadSpark.sh $SPARK_VER $HADOOP_VER
@@ -101,7 +101,7 @@ before_script:
   - tail conf/zeppelin-env.sh
 
 script:
-  - mvn $TEST_FLAG -pl $MODULES $PROFILE -B $TEST_PROJECTS
+  - mvn $TEST_FLAG -pl "$MODULES" $PROFILE -B $TEST_PROJECTS
 
 after_success:
   - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
