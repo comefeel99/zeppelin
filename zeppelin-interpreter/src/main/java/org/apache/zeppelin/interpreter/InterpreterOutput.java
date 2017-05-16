@@ -85,7 +85,7 @@ public class InterpreterOutput extends OutputStream {
       size = 0;
 
       if (currentOut != null) {
-        currentOut.flush();
+        currentOut.close();
       }
 
       resultMessageOutputs.add(out);

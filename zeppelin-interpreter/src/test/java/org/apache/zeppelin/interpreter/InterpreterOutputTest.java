@@ -29,6 +29,7 @@ public class InterpreterOutputTest implements InterpreterOutputListener {
   private InterpreterOutput out;
   int numAppendEvent;
   int numUpdateEvent;
+  private String [] lastUpdatedOutput = new String[10];
 
   @Before
   public void setUp() {
@@ -76,6 +77,19 @@ public class InterpreterOutputTest implements InterpreterOutputListener {
 
     out.flush();
     assertEquals("div", new String(out.getOutputAt(0).toByteArray()));
+  }
+
+  @Test
+  public void testStreamingDisplayTypes() throws IOException {
+    out.write("%html 1\n2\n");
+    assertEquals("", lastUpdatedOutput[0]);
+
+    out.write("%html 3\n");
+    assertEquals("1\n2\n", lastUpdatedOutput[0]);
+    assertEquals("", lastUpdatedOutput[1]);
+
+    out.close();
+    assertEquals("3\n", lastUpdatedOutput[1]);
   }
 
 
@@ -205,5 +219,10 @@ public class InterpreterOutputTest implements InterpreterOutputListener {
   @Override
   public void onUpdate(int index, InterpreterResultMessageOutput out) {
     numUpdateEvent++;
+    try {
+      lastUpdatedOutput[index] = new String(out.toByteArray());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }
