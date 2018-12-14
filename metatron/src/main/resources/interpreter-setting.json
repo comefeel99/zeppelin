@@ -1,0 +1,20 @@
+[
+  {
+    "group": "metatron",
+    "name": "metatron",
+    "className": "org.apache.zeppelin.metatron.MetatronInterpreter",
+    "properties": {
+      "metatron.url": {
+        "envName": "METATRON_URL",
+        "propertyName": "metatron.url",
+        "defaultValue": "http://localhost:8180",
+        "description": "The url for Metatron",
+        "type": "string"
+      }
+    },
+    "editor": {
+      "editOnDblClick": false,
+      "completionSupport": true
+    }
+  }
+]
