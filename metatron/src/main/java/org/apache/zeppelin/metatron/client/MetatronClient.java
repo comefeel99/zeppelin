@@ -112,7 +112,7 @@ public class MetatronClient {
     }
 
     DataRequest dr = new DataRequest(
-            new DatasourceRequest(ds.getName(), "default", false),
+            new DatasourceRequest(ds.getEngineName(), "default", false),
             filters,
             projections,
             limits,

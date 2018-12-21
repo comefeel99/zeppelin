@@ -189,8 +189,9 @@ public class MetatronInterpreter extends Interpreter {
           }
           table.append("\n");
         }
-      }
 
+        return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
+      }
       return new InterpreterResult(InterpreterResult.Code.ERROR, String.format("Unknown expression '%s'", cmd));
     } catch (IOException e) {
       return new InterpreterResult(InterpreterResult.Code.ERROR, e.getMessage());
