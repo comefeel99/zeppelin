@@ -21,14 +21,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.zeppelin.interpreter.InterpreterException;
 import org.apache.zeppelin.interpreter.InterpreterResultMessage;
+import org.apache.zeppelin.metatron.antlr.MetatronLexer;
+import org.apache.zeppelin.metatron.antlr.MetatronParser;
 import org.apache.zeppelin.metatron.client.MetatronClient;
 import org.apache.zeppelin.metatron.message.DataResponse;
 import org.apache.zeppelin.metatron.message.Datasource;
@@ -45,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
@@ -192,10 +201,71 @@ public class MetatronInterpreter extends Interpreter {
 
         return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
       }
+
+      // parse statements using antlr and execute
+      MetatronParser parser = parseMetatronExpr(cmd);
+      List<InterpreterResultMessage> results = execStatement(parser.exprs().stmt());
+      if (results != null && results.size() > 0) {
+        return new InterpreterResult(InterpreterResult.Code.SUCCESS, results);
+      }
+
       return new InterpreterResult(InterpreterResult.Code.ERROR, String.format("Unknown expression '%s'", cmd));
     } catch (IOException e) {
       return new InterpreterResult(InterpreterResult.Code.ERROR, e.getMessage());
     }
+  }
+
+  MetatronParser parseMetatronExpr(String cmd) throws IOException {
+    InputStream inputStream = new ByteArrayInputStream(cmd.getBytes(StandardCharsets.UTF_8));
+    MetatronLexer lexer = new org.apache.zeppelin.metatron.antlr.MetatronLexer(CharStreams.fromStream(inputStream, StandardCharsets.UTF_8));
+    MetatronParser parser = new org.apache.zeppelin.metatron.antlr.MetatronParser(new CommonTokenStream(lexer));
+    return parser;
+  }
+
+  List<InterpreterResultMessage> execStatement(List<MetatronParser.StmtContext> stmts) {
+    return stmts.stream()
+        .flatMap(s -> execStatement(s).stream())
+        .collect(Collectors.toList());
+  }
+
+  List<InterpreterResultMessage> execStatement(MetatronParser.StmtContext stmt) {
+    String resource = stmt.RESOURCE().getText();
+
+    DatasourceDetail detail = null;
+    try {
+      detail = client.showDatasource(resource);
+    } catch (IOException e) {
+      logger.error("Can't get datasource detail " + resource);
+      return ImmutableList.of(
+          new InterpreterResultMessage(InterpreterResult.Type.TEXT, e.getMessage())
+      );
+    }
+
+    StringBuilder summary = new StringBuilder();
+    String summaryFormat = "%-20s: %s\n";
+    summary.append(String.format(summaryFormat, "Created by", detail.getCreatedBy().getFullName()));
+    summary.append(String.format(summaryFormat, "Published", detail.isPublished()));
+    summary.append(String.format(summaryFormat, "Status", detail.getStatus()));
+    summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
+
+    StringBuilder fields = new StringBuilder();
+    fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
+    for (Field f : detail.getFields()) {
+      fields.append(f.getId() + '\t' +
+          f.getName() + '\t' +
+          f.getAlias() + '\t' +
+          f.getType() + '\t' +
+          f.getLogicalType() + '\t' +
+          f.getRole() + '\t' +
+          f.getBiType() + '\n');
+    }
+
+    return ImmutableList.of(
+        new InterpreterResultMessage(
+            InterpreterResult.Type.TEXT, summary.toString()),
+        new InterpreterResultMessage(
+            InterpreterResult.Type.TABLE, fields.toString())
+    );
   }
 
   private InterpreterResultMessage datasourcesToTable(List<Datasource> ds) {
