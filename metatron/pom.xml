@@ -67,6 +67,12 @@
       <artifactId>json-flattener</artifactId>
       <version>${json-flattener.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>4.7.2</version>
+    </dependency>
     
     <dependency>
       <groupId>com.mashape.unirest</groupId>
@@ -101,6 +107,25 @@
         <configuration>
           <skip>true</skip>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>4.7</version>
+        <configuration>
+          <arguments>
+            <argument>-package</argument>
+            <argument>org.apache.zeppelin.metatron.antlr</argument>
+          </arguments>
+        </configuration>
+        <executions>
+          <execution>
+            <id>antlr</id>
+            <goals>
+              <goal>antlr4</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
