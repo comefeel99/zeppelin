@@ -84,7 +84,7 @@ spec:
   automountServiceAccountToken: true
   containers:
   - name: zeppelin-server
-    image: apache/zeppelin:0.9.0-SNAPSHOT
+    image: moon/zeppelin:0.9.0-SNAPSHOT
     command: ["sh", "-c", "$(ZEPPELIN_HOME)/bin/zeppelin.sh"]
     lifecycle:
       preStop:
@@ -93,7 +93,7 @@ spec:
           command: ["sh", "-c", "ps -ef | grep org.apache.zeppelin.server.ZeppelinServer | grep -v grep | awk '{print $2}' | xargs kill"]
     env:
     - name: ZEPPELIN_K8S_CONTAINER_IMAGE
-      value: apache/zeppelin:0.9.0-SNAPSHOT
+      value: moon/zeppelin:0.9.0-SNAPSHOT
     - name: ZEPPELIN_HOME
       value: /zeppelin
     - name: ZEPPELIN_SERVER_RPC_PORTRANGE
@@ -127,6 +127,13 @@ spec:
     #    mountPath: /zeppelin/conf
     #  - name: zeppelin-server-custom-k8s          # configure this to mount customized Kubernetes spec for interpreter
     #    mountPath: /zeppelin/k8s
+    volumeMounts:
+    - name: zeppelin-volume
+      mountPath: /zeppelin/conf
+      subPath: conf
+    - name: zeppelin-volume
+      mountPath: /zeppelin/notebook
+      subPath: notebook
   - name: zeppelin-server-gateway
     image: nginx:1.14.0
     command: ["/bin/sh", "-c"]
@@ -162,6 +169,9 @@ spec:
         path: nginx.conf
       - key: serviceDomain
         path: serviceDomain
+  - name: zeppelin-volume
+    persistentVolumeClaim:
+      claimName: zeppelin-pvc
 ---
 kind: Service
 apiVersion: v1
