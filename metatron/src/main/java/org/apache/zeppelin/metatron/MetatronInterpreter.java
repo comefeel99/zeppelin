@@ -74,7 +74,6 @@ public class MetatronInterpreter extends Interpreter {
   private final Pattern getDataPattern;
   private MetatronClient client;
 
-
   public MetatronInterpreter(Properties property) {
     super(property);
     showDatabasesPattern = Pattern.compile("show datasources");
@@ -95,123 +94,148 @@ public class MetatronInterpreter extends Interpreter {
   public void close() {
   }
 
-
   @Override
   public InterpreterResult interpret(String cmd, InterpreterContext interpreterContext) {
+    if (interpreterContext != null) {
+      interpreterContext.getResourcePool().put("metatron", this);
+      client.setAccessToken(interpreterContext
+              .getAuthenticationInfo()
+              .getUserCredentials()
+              .getUsernamePassword("token")
+              .getPassword());
+    }
+
     try {
-      Matcher m = showDatabasesPattern.matcher(cmd);
-      if (m.matches()) {
-        List<Datasource> resp = client.showDatasources();
-        return new InterpreterResult(
-                InterpreterResult.Code.SUCCESS,
-                ImmutableList.of(
-                        datasourcesToTable(resp)
-                )
-        );
+      InterpreterResult result = runMetatronQuery(cmd, interpreterContext);
+      if (result != null) {
+        return result;
+      } else {
+        return new InterpreterResult(InterpreterResult.Code.ERROR, String.format("Unknown expression '%s'", cmd));
       }
-
-      m = showDetailPattern.matcher(cmd);
-      if (m.matches()) {
-        DatasourceDetail detail = client.showDatasource(m.group("datasource"));
-
-        StringBuilder summary = new StringBuilder();
-        String summaryFormat = "%-20s: %s\n";
-        summary.append(String.format(summaryFormat, "Created by", detail.getCreatedBy().getFullName()));
-        summary.append(String.format(summaryFormat, "Published", detail.isPublished()));
-        summary.append(String.format(summaryFormat, "Status", detail.getStatus()));
-        summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
-
-        StringBuilder fields = new StringBuilder();
-        fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
-        for (Field f : detail.getFields()) {
-          fields.append(f.getId() + '\t' +
-                  f.getName() + '\t' +
-                  f.getAlias() + '\t' +
-                  f.getType() + '\t' +
-                  f.getLogicalType() + '\t' +
-                  f.getRole() + '\t' +
-                  f.getBiType() + '\n');
-        }
-
-        return new InterpreterResult(
-                InterpreterResult.Code.SUCCESS,
-                ImmutableList.of(
-                        new InterpreterResultMessage(
-                                InterpreterResult.Type.TEXT, summary.toString()),
-                        new InterpreterResultMessage(
-                                InterpreterResult.Type.TABLE, fields.toString())
-                        )
-        );
-      }
-
-      m = getDataPattern.matcher(cmd);
-      if (m.matches()) {
-        String datasourceName = m.group("datasource");
-        String filterExpr = m.group("filter");
-        String limit = m.group("limit");
-        String dimension = m.group("dimension");
-        String measure = m.group("measure");
-
-        List<Filter> filters = new LinkedList<>();
-        for (String expr : filterExpr.split(",")) {
-          String[] fieldValue = expr.split("=");
-          filters.add(Filter.newBuilder()
-                  .setType("include")
-                  .setField(fieldValue[0])
-                  .addValue(fieldValue[1])
-                  .build());
-        }
-
-        DataResponse data = client.getData(
-                datasourceName,
-                filters,
-                ImmutableList.of(
-                        new Projection("dimension", dimension),
-                        new Projection("measure", measure)),
-                new Limits(Long.parseLong(limit))
-        );
-
-        StringBuilder table = new StringBuilder();
-
-        // create header
-        if (data.size() <= 0) {
-          return new InterpreterResult(InterpreterResult.Code.SUCCESS);
-        }
-
-        for (String key : data.get(0).keySet()) {
-          if (table.toString().length() > 0) {
-            table.append("\t");
-          }
-          table.append(key);
-        }
-        table.append("\n");
-
-        // add rows
-        for (Record r : data) {
-          Collection<Object> values = r.values();
-          int i = 0;
-          for (Object v : values) {
-            if (i++ > 0) {
-              table.append("\t");
-            }
-            table.append(v);
-          }
-          table.append("\n");
-        }
-
-        return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
-      }
-
-      // parse statements using antlr and execute
-      MetatronParser parser = parseMetatronExpr(cmd);
-      List<InterpreterResultMessage> results = execStatement(parser.exprs().stmt());
-      if (results != null && results.size() > 0) {
-        return new InterpreterResult(InterpreterResult.Code.SUCCESS, results);
-      }
-
-      return new InterpreterResult(InterpreterResult.Code.ERROR, String.format("Unknown expression '%s'", cmd));
     } catch (IOException e) {
       return new InterpreterResult(InterpreterResult.Code.ERROR, e.getMessage());
+    }
+  }
+
+  public InterpreterResult runMetatronQuery(String query) throws IOException {
+    return runMetatronQuery(query, null);
+  }
+
+  InterpreterResult runMetatronQuery(String query, InterpreterContext interpreterContext) throws IOException {
+    Matcher m = showDatabasesPattern.matcher(query);
+    if (m.matches()) {
+      List<Datasource> resp = client.showDatasources();
+      return new InterpreterResult(
+              InterpreterResult.Code.SUCCESS,
+              ImmutableList.of(
+                      datasourcesToTable(resp)
+              )
+      );
+    }
+
+    m = showDetailPattern.matcher(query);
+    if (m.matches()) {
+      DatasourceDetail detail = client.showDatasource(m.group("datasource"));
+
+      StringBuilder summary = new StringBuilder();
+      String summaryFormat = "%-20s: %s\n";
+      summary.append(String.format(summaryFormat, "Created by", detail.getCreatedBy().getFullName()));
+      summary.append(String.format(summaryFormat, "Published", detail.isPublished()));
+      summary.append(String.format(summaryFormat, "Status", detail.getStatus()));
+      summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
+
+      StringBuilder fields = new StringBuilder();
+      fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
+      for (Field f : detail.getFields()) {
+        fields.append(f.getId() + '\t' +
+                f.getName() + '\t' +
+                f.getAlias() + '\t' +
+                f.getType() + '\t' +
+                f.getLogicalType() + '\t' +
+                f.getRole() + '\t' +
+                f.getBiType() + '\n');
+      }
+
+      return new InterpreterResult(
+              InterpreterResult.Code.SUCCESS,
+              ImmutableList.of(
+                      new InterpreterResultMessage(
+                              InterpreterResult.Type.TEXT, summary.toString()),
+                      new InterpreterResultMessage(
+                              InterpreterResult.Type.TABLE, fields.toString())
+              )
+      );
+    }
+
+    m = getDataPattern.matcher(query);
+    if (m.matches()) {
+      String datasourceName = m.group("datasource");
+      String filterExpr = m.group("filter");
+      String limit = m.group("limit");
+      String dimension = m.group("dimension");
+      String measure = m.group("measure");
+
+      List<Filter> filters = new LinkedList<>();
+      for (String expr : filterExpr.split(",")) {
+        String[] fieldValue = expr.split("=");
+        filters.add(Filter.newBuilder()
+                .setType("include")
+                .setField(fieldValue[0])
+                .addValue(fieldValue[1])
+                .build());
+      }
+
+      DataResponse data = client.getData(
+              datasourceName,
+              filters,
+              ImmutableList.of(
+                      new Projection("dimension", dimension),
+                      new Projection("measure", measure)),
+              new Limits(Long.parseLong(limit))
+      );
+
+      StringBuilder table = new StringBuilder();
+
+      if (interpreterContext != null) {
+        interpreterContext.getResourcePool().put("data", data);
+      }
+
+      // create header
+      if (data.size() <= 0) {
+        return new InterpreterResult(InterpreterResult.Code.SUCCESS);
+      }
+
+      for (String key : data.get(0).keySet()) {
+        if (table.toString().length() > 0) {
+          table.append("\t");
+        }
+        table.append(key);
+      }
+      table.append("\n");
+
+      // add rows
+      for (Record r : data) {
+        Collection<Object> values = r.values();
+        int i = 0;
+        for (Object v : values) {
+          if (i++ > 0) {
+            table.append("\t");
+          }
+          table.append(v);
+        }
+        table.append("\n");
+      }
+
+      return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
+    }
+
+    // parse statements using antlr and execute
+    MetatronParser parser = parseMetatronExpr(query);
+    List<InterpreterResultMessage> results = execStatement(parser.exprs().stmt());
+    if (results != null && results.size() > 0) {
+      return new InterpreterResult(InterpreterResult.Code.SUCCESS, results);
+    } else {
+      return null;
     }
   }
 
