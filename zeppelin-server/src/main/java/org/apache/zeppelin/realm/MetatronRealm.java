@@ -22,6 +22,12 @@ import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.zeppelin.server.ZeppelinServer;
+import org.apache.zeppelin.user.UserCredentials;
+import org.apache.zeppelin.user.UsernamePassword;
+import org.eclipse.jetty.util.security.Credential;
+
+import javax.inject.Inject;
 
 public class MetatronRealm extends AuthorizingRealm  {
   String authUrl; // http(s)://localhost:8180/oauth/token
@@ -101,6 +107,12 @@ public class MetatronRealm extends AuthorizingRealm  {
 
     String result = IOUtils.toString(resp.getEntity().getContent(), Charsets.UTF_8);
     AuthResponse authResp = gson.fromJson(result, AuthResponse.class);
+
+    // put user credential, so interpreter can read this information
+    UserCredentials userCredentials = new UserCredentials();
+    userCredentials.putUsernamePassword("token", new UsernamePassword(username, authResp.access_token));
+    ZeppelinServer.notebook.getCredentials().putUserCredentials(username, userCredentials);
+
     return authResp;
   }
 

@@ -63,8 +63,6 @@ public class MetatronClient {
     gson = new GsonBuilder()
             .registerTypeAdapter(Date.class, new DateDeserializer())
             .create();
-
-    auth();
   }
 
 
@@ -141,6 +139,7 @@ public class MetatronClient {
    * TODO: delete this method after after proper auth integration
    * @return
    */
+  /*
   AuthResponse auth() throws IOException {
     int protoPos = baseUrl.indexOf("://");
     String url = "";
@@ -162,6 +161,11 @@ public class MetatronClient {
     AuthResponse authResp = gson.fromJson(result, AuthResponse.class);
     accessToken = authResp.getAccess_token();
     return authResp;
+  }
+  */
+
+  public void setAccessToken(String accessToken) {
+    this.accessToken = accessToken;
   }
 
   HttpGet httpGet(RequestPath path) {
