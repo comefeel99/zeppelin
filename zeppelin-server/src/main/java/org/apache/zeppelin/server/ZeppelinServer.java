@@ -161,6 +161,7 @@ public class ZeppelinServer extends ResourceConfig {
             bindAsContract(JobManagerService.class).in(Singleton.class);
             bindAsContract(Notebook.class).in(Singleton.class);
             bindAsContract(NoteServingTaskManagerService.class).in(Singleton.class);
+            bindAsContract(NoteTestTaskManagerService.class).in(Singleton.class);
             bindAsContract(NotebookServer.class)
                 .to(AngularObjectRegistryListener.class)
                 .to(RemoteInterpreterProcessListener.class)
@@ -254,23 +255,7 @@ public class ZeppelinServer extends ResourceConfig {
 
     runNoteOnStart(conf);
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  LOG.info("Shutting down Zeppelin Server ... ");
-                  try {
-                    jettyWebServer.stop();
-                    if (!conf.isRecoveryEnabled()) {
-                      sharedServiceLocator.getService(InterpreterSettingManager.class).close();
-                    }
-                    sharedServiceLocator.getService(Notebook.class).close();
-                    Thread.sleep(3000);
-                  } catch (Exception e) {
-                    LOG.error("Error while stopping servlet container", e);
-                  }
-                  LOG.info("Bye");
-                }));
+    Runtime.getRuntime().addShutdownHook(shutdown(conf));
 
     // when zeppelin is started inside of ide (especially for eclipse)
     // for graceful shutdown, input any key in console window
@@ -287,6 +272,24 @@ public class ZeppelinServer extends ResourceConfig {
     if (!conf.isRecoveryEnabled()) {
       sharedServiceLocator.getService(InterpreterSettingManager.class).close();
     }
+  }
+
+  private static Thread shutdown(ZeppelinConfiguration conf) {
+    return new Thread(
+            () -> {
+              LOG.info("Shutting down Zeppelin Server ... ");
+              try {
+                jettyWebServer.stop();
+                if (!conf.isRecoveryEnabled()) {
+                  sharedServiceLocator.getService(InterpreterSettingManager.class).close();
+                }
+                sharedServiceLocator.getService(Notebook.class).close();
+                Thread.sleep(3000);
+              } catch (Exception e) {
+                LOG.error("Error while stopping servlet container", e);
+              }
+              LOG.info("Bye");
+            });
   }
 
   private static Server setupJettyServer(ZeppelinConfiguration conf) {
@@ -336,7 +339,7 @@ public class ZeppelinServer extends ResourceConfig {
     return server;
   }
 
-  private static void runNoteOnStart(ZeppelinConfiguration conf) throws IOException {
+  private static void runNoteOnStart(ZeppelinConfiguration conf) throws IOException, InterruptedException {
     String noteIdToRun = conf.getNotebookRunId();
     if (!Strings.isEmpty(noteIdToRun)) {
       NotebookService notebookService = (NotebookService) ServiceLocatorUtilities.getService(
@@ -345,6 +348,7 @@ public class ZeppelinServer extends ResourceConfig {
       ServiceContext serviceContext;
       String base64EncodedJsonSerializedServiceContext = conf.getNotebookRunServiceContext();
       if (Strings.isEmpty(base64EncodedJsonSerializedServiceContext)) {
+        LOG.info("No service context provided. use ANONYMOUS");
         serviceContext = new ServiceContext(AuthenticationInfo.ANONYMOUS, new HashSet<String>() {});
       } else {
         serviceContext = new Gson().fromJson(
@@ -366,6 +370,12 @@ public class ZeppelinServer extends ResourceConfig {
         }
       });
 
+      if (conf.getNotebookRunAutoShutdown()) {
+        Thread t = shutdown(conf);
+        t.start();
+        t.join();
+        System.exit(0);
+      }
     }
   }
 
