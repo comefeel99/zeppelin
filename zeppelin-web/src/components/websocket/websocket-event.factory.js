@@ -189,6 +189,8 @@ function WebsocketEventFactory($rootScope, $websocket, $location, baseUrlSrv, ng
       ngToast.info(data.message);
     } else if (op === 'NOTICE') {
       ngToast.info(data.notice);
+    } else if (op === 'RPC_INVOKE' || op === 'RPC_RETURN' || op === 'RPC_EXCEPTION') {
+      this._webrpcSession.onMessage(payload);
     } else {
       console.error(`unknown websocket op: ${op}`);
     }

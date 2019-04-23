@@ -82,4 +82,16 @@ public class NotebookSocket extends WebSocketAdapter {
   public String toString() {
     return request.getRemoteHost() + ":" + request.getRemotePort();
   }
+
+  public Session getSession() {
+    return connection;
+  }
+
+  public NotebookSocketListener getListener() {
+    return listener;
+  }
+
+  public void setListener(NotebookSocketListener listener) {
+    this.listener = listener;
+  }
 }

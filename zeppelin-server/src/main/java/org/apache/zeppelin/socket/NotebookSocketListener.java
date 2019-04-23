@@ -22,5 +22,5 @@ package org.apache.zeppelin.socket;
 public interface NotebookSocketListener {
   void onClose(NotebookSocket socket, int code, String message);
   void onOpen(NotebookSocket socket);
-  void onMessage(NotebookSocket socket, String message);
+  boolean onMessage(NotebookSocket socket, String message);
 }

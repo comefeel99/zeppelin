@@ -160,6 +160,7 @@ public class ZeppelinServer extends ResourceConfig {
             bindAsContract(NotebookService.class).in(Singleton.class);
             bindAsContract(JobManagerService.class).in(Singleton.class);
             bindAsContract(Notebook.class).in(Singleton.class);
+            bindAsContract(WebstoreService.class).in(Singleton.class);
             bindAsContract(NoteServingTaskManagerService.class).in(Singleton.class);
             bindAsContract(NoteTestTaskManagerService.class).in(Singleton.class);
             bindAsContract(NotebookServer.class)

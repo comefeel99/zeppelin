@@ -22,6 +22,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.display.GUI;
@@ -94,6 +95,21 @@ public class ConnectionManager {
 
   public void addConnection(NotebookSocket conn) {
     connectedSockets.add(conn);
+  }
+
+  public NotebookSocket getConnection(String id) {
+    List<NotebookSocket> connections = connectedSockets.stream().filter(c -> {
+      return id.equals(c.toString());
+    }).collect(Collectors.toList());
+
+    if (connections.size() == 0) {
+      return null;
+    } else if (connections.size() == 1) {
+      return connections.get(0);
+    } else {
+      LOGGER.error("Something wrong. Duplicated connection id");
+      return null;
+    }
   }
 
   public void removeConnection(NotebookSocket conn) {

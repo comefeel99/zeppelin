@@ -24,7 +24,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.internal.StringMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
@@ -503,8 +502,8 @@ public class InterpreterSetting {
   }
 
   public void setProperties(Object object) {
-    if (object instanceof StringMap) {
-      StringMap<String> map = (StringMap) properties;
+    if (object instanceof Map) {
+      Map<String, Object> map = (Map) properties;
       Properties newProperties = new Properties();
       for (String key : map.keySet()) {
         newProperties.put(key, map.get(key));
@@ -878,12 +877,12 @@ public class InterpreterSetting {
 
   // For backward compatibility of interpreter.json format after ZEPPELIN-2403
   static Map<String, InterpreterProperty> convertInterpreterProperties(Object properties) {
-    if (properties != null && properties instanceof StringMap) {
+    if (properties != null && properties instanceof Map) {
       Map<String, InterpreterProperty> newProperties = new HashMap<>();
-      StringMap p = (StringMap) properties;
+      Map<String, String> p = (Map) properties;
       for (Object o : p.entrySet()) {
         Map.Entry entry = (Map.Entry) o;
-        if (!(entry.getValue() instanceof StringMap)) {
+        if (!(entry.getValue() instanceof Map)) {
           InterpreterProperty newProperty = new InterpreterProperty(
               entry.getKey().toString(),
               entry.getValue(),
@@ -897,15 +896,15 @@ public class InterpreterSetting {
       return newProperties;
 
     } else if (properties instanceof Map) {
-      Map<String, Object> dProperties =
-          (Map<String, Object>) properties;
+      Map<String, String> dProperties =
+          (Map) properties;
       Map<String, InterpreterProperty> newProperties = new HashMap<>();
       for (String key : dProperties.keySet()) {
         Object value = dProperties.get(key);
         if (value instanceof InterpreterProperty) {
           return (Map<String, InterpreterProperty>) properties;
-        } else if (value instanceof StringMap) {
-          StringMap stringMap = (StringMap) value;
+        } else if (value instanceof Map) {
+          Map<String, String> stringMap = (Map) value;
           InterpreterProperty newProperty = new InterpreterProperty(
               key,
               stringMap.get("value"),

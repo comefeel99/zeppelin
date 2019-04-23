@@ -191,7 +191,11 @@ public class Message implements JsonSerializable {
     COLLABORATIVE_MODE_STATUS,    // [s-c] collaborative mode status
     PATCH_PARAGRAPH,              // [c-s][s-c] patch editor text
     NOTE_RUNNING_STATUS,        // [s-c] sequential run status will be change
-    NOTICE                        // [s-c] Notice
+    NOTICE,                       // [s-c] Notice
+
+    RPC_INVOKE,                   // [s-c][c-s] invoke rpc method
+    RPC_RETURN,                   // [s-c] return value for rpc invoke from client
+    RPC_EXCEPTION,                // [s-c] return exception for invoke from client
   }
 
   // these messages will be ignored during the sequential run of the note

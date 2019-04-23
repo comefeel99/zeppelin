@@ -21,7 +21,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
-import com.google.gson.internal.StringMap;
 import com.google.gson.reflect.TypeToken;
 
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -112,7 +111,7 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     assertThat(get1, isAllowed());
     Map<String, Object> resp1 = gson.fromJson(get1.getResponseBodyAsString(),
                 new TypeToken<Map<String, Object>>() { }.getType());
-    List<StringMap<Object>> body1 = (List<StringMap<Object>>) resp1.get("body");
+    List<Map> body1 = (List<Map>) resp1.get("body");
     assertEquals(body1.size(), 0);
 
     // Enable "name1" package
@@ -122,10 +121,10 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     assertThat(get2, isAllowed());
     Map<String, Object> resp2 = gson.fromJson(get2.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    List<StringMap<Object>> body2 = (List<StringMap<Object>>) resp2.get("body");
+    List<Map> body2 = (List<Map>) resp2.get("body");
 
     assertEquals(body2.size(), 1);
-    StringMap<Object> pkg = (StringMap<Object>) body2.get(0).get("pkg");
+    Map pkg = (Map) body2.get(0).get("pkg");
     assertEquals(pkg.get("name"), "name1");
   }
 
@@ -136,10 +135,10 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     assertThat(get, isAllowed());
     Map<String, Object> resp = gson.fromJson(get.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    List<StringMap<Object>> body = (List<StringMap<Object>>) resp.get("body");
+    List<Map> body = (List<Map>) resp.get("body");
 
     assertEquals(body.size(), 1);
-    StringMap<Object> pkg = (StringMap<Object>) body.get(0).get("pkg");
+    Map pkg = (Map) body.get(0).get("pkg");
     assertEquals(pkg.get("name"), "name1");
   }
 
@@ -149,7 +148,7 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     assertThat(get, isAllowed());
     Map<String, Object> resp = gson.fromJson(get.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    StringMap<Object> body = (StringMap<Object>) resp.get("body");
+    Map body = (Map) resp.get("body");
     // ToDo: Apply config with POST command and check update
     assertEquals(body.size(), 0);
   }
@@ -162,7 +161,7 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     assertThat(get, isAllowed());
     Map<String, Object> resp = gson.fromJson(get.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    StringMap<Object> body = (StringMap<Object>) resp.get("body");
+    Map body = (Map) resp.get("body");
     assertTrue(body.containsKey("confPersisted"));
   }
 
@@ -176,7 +175,7 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     GetMethod get1 = httpGet("/helium/package/" + packageName);
     Map<String, Object> resp1 = gson.fromJson(get1.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    List<StringMap<Object>> body1 = (List<StringMap<Object>>) resp1.get("body");
+    List<Map> body1 = (List<Map>) resp1.get("body");
     assertEquals(body1.get(0).get("enabled"), true);
 
     PostMethod post2 = httpPost("/helium/disable/" + packageName, "");
@@ -186,7 +185,7 @@ public class HeliumRestApiTest extends AbstractTestRestApi {
     GetMethod get2 = httpGet("/helium/package/" + packageName);
     Map<String, Object> resp2 = gson.fromJson(get2.getResponseBodyAsString(),
             new TypeToken<Map<String, Object>>() { }.getType());
-    List<StringMap<Object>> body2 = (List<StringMap<Object>>) resp2.get("body");
+    List<Map> body2 = (List<Map>) resp2.get("body");
     assertEquals(body2.get(0).get("enabled"), false);
   }
 
