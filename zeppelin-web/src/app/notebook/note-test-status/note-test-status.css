@@ -1,0 +1,8 @@
+.note-test-status-component {
+  padding: 3px 3px 3px 3px;
+  margin-right: 7px;
+}
+
+.note-test-status-component span:hover {
+  cursor: pointer;
+}
