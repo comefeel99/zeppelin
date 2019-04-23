@@ -1,0 +1,44 @@
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div class="note-serving-status-component">
+  {{$ctrl.servingStatus}}
+  <span class="note-serving-status-component-buttons" ng-if="!$ctrl.textonly">
+    <span ng-if="$ctrl.servingStatus == 'Running'" ng-click="$ctrl.stopServing()" uib-tooltip="Stop serving" tooltip-placement="right">
+        <i class="fa fa-circle" style="color: green"></i>
+    </span>
+    <span ng-if="$ctrl.servingStatus == 'Error'" ng-click="$ctrl.showNote()" uib-tooltip="Show note" tooltip-placement="right">
+      <i class="fa fa-cross" style="color: red"></i>
+    </span>
+    <span ng-if="$ctrl.servingStatus == 'Not running'" ng-click="$ctrl.startServing()" uib-tooltip="Start serving" tooltip-placement="right">
+      <i class="fa fa-play-circle"></i>
+    </span>
+  </span>
+  <div class="note-serving-status-component-infos" ng-if="!$ctrl.textonly">
+  </div>
+</div>

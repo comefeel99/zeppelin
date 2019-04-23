@@ -65,6 +65,7 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
     let pattern = new RegExp('^.*\/notebook\/[a-zA-Z0-9_]*\/(revision|task)\/[a-zA-Z0-9_]*');
     return pattern.test(path);
   };
+  $scope.revisionId = $routeParams.revisionId;
 
   let isTaskPath = function(path) {
     let pattern = new RegExp('^.*\/notebook\/[a-zA-Z0-9_]*\/task\/[a-zA-Z0-9_]*');
