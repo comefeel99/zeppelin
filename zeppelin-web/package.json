@@ -14,7 +14,7 @@
     "lint:watch": "esw --watch src",
     "lint:once": "eslint src",
     "predev": "grunt pre-webpack-dev",
-    "dev:server": "webpack-dev-server --hot",
+    "dev:server": "webpack-dev-server --hot --mode development",
     "dev:helium": "HELIUM_BUNDLE_DEV=true webpack-dev-server --hot",
     "dev:watch": "grunt watch-webpack-dev",
     "dev": "npm-run-all --parallel dev:server lint:watch dev:watch",

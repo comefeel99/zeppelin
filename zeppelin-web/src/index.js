@@ -53,6 +53,7 @@ import './app/notebook/save-as/browser-detect.service.js';
 import './app/notebook/elastic-input/elastic-input.controller.js';
 import './app/notebook/dropdown-input/dropdown-input.directive.js';
 import './app/notebook/note-var-share.service.js';
+import './app/notebook/note-test-status/note-test-status.component';
 import './app/notebook-repository/notebook-repository.controller.js';
 import './app/search/result-list.controller.js';
 import './app/search/search.service.js';

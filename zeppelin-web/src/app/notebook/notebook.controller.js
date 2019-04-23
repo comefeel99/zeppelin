@@ -62,13 +62,19 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
 
   let connectedOnce = false;
   let isRevisionPath = function(path) {
-    let pattern = new RegExp('^.*\/notebook\/[a-zA-Z0-9_]*\/revision\/[a-zA-Z0-9_]*');
+    let pattern = new RegExp('^.*\/notebook\/[a-zA-Z0-9_]*\/(revision|task)\/[a-zA-Z0-9_]*');
+    return pattern.test(path);
+  };
+
+  let isTaskPath = function(path) {
+    let pattern = new RegExp('^.*\/notebook\/[a-zA-Z0-9_]*\/task\/[a-zA-Z0-9_]*');
     return pattern.test(path);
   };
 
   $scope.noteRevisions = [];
   $scope.currentRevision = 'Head';
   $scope.revisionView = isRevisionPath($location.path());
+  $scope.taskView = isTaskPath($location.path());
 
   $scope.search = {
     searchText: '',
@@ -163,11 +169,26 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
   const initNotebook = function() {
     noteVarShareService.clear();
     if ($routeParams.revisionId) {
-      websocketMsgSrv.getNoteByRevision($routeParams.noteId, $routeParams.revisionId);
+      if ($scope.taskView) {
+        $http.get(
+          baseUrlSrv.getRestApiBase() +
+          '/notebook/test/' +
+          $routeParams.noteId + '/' +
+          $routeParams.revisionId + '/note')
+          .success(function(data, status) {
+            console.info('Test task note', data.body);
+            setNoteContent(data.body.note);
+          })
+          .error(function(data, status) {
+
+          });
+      } else {
+        websocketMsgSrv.getNoteByRevision($routeParams.noteId, $routeParams.test);
+      }
     } else {
       websocketMsgSrv.getNote($routeParams.noteId);
     }
-    websocketMsgSrv.listRevisionHistory($routeParams.noteId);
+
     let currentRoute = $route.current;
     if (currentRoute) {
       setTimeout(
@@ -344,6 +365,7 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
     if (data.note) {
       $scope.note = data.note;
       initializeLookAndFeel();
+      websocketMsgSrv.listRevisionHistory($routeParams.noteId);
     } else {
       $location.path('/');
     }
@@ -1464,6 +1486,10 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
   });
 
   $scope.$on('setNoteContent', function(event, note) {
+    setNoteContent(note);
+  });
+
+  let setNoteContent = function(note) {
     if (note === undefined) {
       $location.path('/');
     }
@@ -1472,6 +1498,7 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
 
     $scope.paragraphUrl = $routeParams.paragraphId;
     $scope.asIframe = $routeParams.asIframe;
+
     if ($scope.paragraphUrl) {
       $scope.note = cleanParagraphExcept($scope.paragraphUrl, $scope.note);
       $scope.$broadcast('$unBindKeyEvent', $scope.$unBindKeyEvent);
@@ -1485,10 +1512,13 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
     // open interpreter binding setting when there're none selected
     getInterpreterBindings();
     getPermissions();
+
+    websocketMsgSrv.listRevisionHistory($routeParams.noteId);
+
     let isPersonalized = $scope.note.config.personalizedMode;
     isPersonalized = isPersonalized === undefined ? 'false' : isPersonalized;
     $scope.note.config.personalizedMode = isPersonalized;
-  });
+  };
 
   $scope.$on('$routeChangeStart', function(event, next, current) {
     if (!$scope.note || !$scope.note.paragraphs) {
