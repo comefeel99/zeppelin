@@ -46,7 +46,7 @@ class NoteTestStatusController {
             self.updateStatus();
           }, 3000);
         } else {
-          if (data.body.result.fail > 0) {
+          if (data.body.result && data.body.result.fail > 0) {
             self.testStatus = 'fail';
           } else {
             self.testStatus = 'pass';

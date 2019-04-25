@@ -27,7 +27,6 @@ export default class PivotTransformation extends Transformation {
     let self = this;
 
     let configObj = self.config;
-    console.log('getSetting', configObj);
     return {
       template: 'app/tabledata/pivot_settings.html',
       scope: {
@@ -74,6 +73,7 @@ export default class PivotTransformation extends Transformation {
     if (firstTime) {
       this.selectDefault();
     }
+
     return this.pivot(
       tableData,
       config.keys,

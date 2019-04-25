@@ -18,7 +18,7 @@ import './note-serving-status.css';
 class NoteServingStatusController {
   constructor($http, $location, baseUrlSrv) {
     'ngInject';
-    this.servingStatus = 'Not running'; // one of 'Not running', 'Running', 'Error'
+    this.servingStatus = '...'; // one of 'Loading', 'Not running', 'Running', 'Error'
     this.apiBaseAddr = baseUrlSrv.getRestApiBase();
     this.location = $location;
     this.http = $http;
@@ -37,21 +37,24 @@ class NoteServingStatusController {
   updateStatus() {
     let self = this;
     console.warn('Update status', this.noteid, this.revid);
+
     this.http.get(this.apiBaseAddr + '/notebook/serving/' + this.noteid + '/' + this.revid)
     .success(function(data, status) {
       console.warn('Serving status', data, status);
       if (data.body.task) {
         if (Object.keys(data.body.task).length === 0) {
-          self.servingStatus = "Not running";
+          self.servingStatus = 'Not running';
         } else {
           self.servingStatus = 'Running';
         }
       } else {
-        self.servingStatus = "Not running";
+        self.servingStatus = 'Not running';
       }
     })
     .error(function(data, status) {
-      self.servingStatus = 'Not running';
+      if (self.noteid && self.revid) {
+        self.servingStatus = 'Not running';
+      }
     });
 
     self._t = setTimeout(function() {

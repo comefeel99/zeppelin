@@ -1,0 +1,62 @@
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div>
+  <div class="serving-page-header">
+    <div class="row">
+      <div class="col-md-12">
+        <h3 class="new_h3">
+          Serving
+        </h3>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div style="float:left">You can monitor the status of notebook and navigate to note or paragraph.</div>
+        <div class="btn btn-default btn-xs"
+             style="float:right"
+             ng-disabled='loading'
+             ng-click='refresh()'>
+          Reload
+        </div>
+      </div>
+    </div>
+  </div>
+  <div ng-repeat="(noteId, servRevisions) in servings" class="serving-page-panel">
+    <div>
+      <i class="icon-doc"></i>
+      <a style="font-size: 18px;" ng-href="#/notebook/{{noteId}}">
+        {{servRevisions[0].note.name}}
+      </a>
+    </div>
+    <div ng-repeat="serving in servRevisions">
+      <hr />
+      <div>
+        Rev: 
+        <a ng-href="#/notebook/{{noteId}}/task/{{serving.note.revision}}">
+          {{serving.note.revision}}
+        </a>
+      </div>
+      <div ng-repeat="(endpoint, pod) in serving.info.endpoints">
+        <div style="border: 1px solid #FFFFFF; padding: 10px 10px 10px 10px;">
+          <div>Endpoint: "{{endpoint}}" (/serving/{{noteId}}/{{serving.note.revision}}/{{endpoint}})</div>
+          <serving-metric noteid="noteId" revid="serving.note.revision" endpoint="endpoint" />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div ng-if="noServings" class="serving-page-panel">
+    No note serving found.
+  </div>
+</div>

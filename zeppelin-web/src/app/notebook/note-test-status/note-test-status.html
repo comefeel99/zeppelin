@@ -13,11 +13,11 @@ limitations under the License.
 -->
 
 <div class="note-test-status-component">
-  <span ng-if="$ctrl.testStatus == 'pass'" ng-click="$ctrl.showNote()" uib-tooltip="Stop note" tooltip-placement="left">
+  <span ng-if="$ctrl.testStatus == 'pass'" ng-click="$ctrl.showNote()" uib-tooltip="Test result" tooltip-placement="left">
     <i class="fa fa-check" style="color: green"></i>
   </span>
-  <span ng-if="$ctrl.testStatus == 'fail'" ng-click="$ctrl.showNote()" uib-tooltip="Show note" tooltip-placement="left">
-    <i class="fa fa-cross" style="color: red"></i>
+  <span ng-if="$ctrl.testStatus == 'fail'" ng-click="$ctrl.showNote()" uib-tooltip="Test result" tooltip-placement="left">
+    <i class="fa fa-times" style="color: red"></i>
   </span>
   <span ng-if="$ctrl.testStatus == 'running'" ng-click="$ctrl.stopTest()" uib-tooltip="Running. Click to Stop" tooltip-placement="left">
     <i class="fa fa-circle" style="color: orange"></i>
