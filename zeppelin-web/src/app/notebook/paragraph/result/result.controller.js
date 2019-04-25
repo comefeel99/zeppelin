@@ -688,7 +688,7 @@ function ResultCtrl($scope, $rootScope, $route, $window, $routeParams, $location
       };
     } else if (refresh) {
       // when graph options or data are changed
-      console.log('Refresh data %o', tableData);
+      // console.log('Refresh data %o', tableData);
 
       afterLoaded = function(loadedElem) {
         const transformationSettingTargetEl = getTrSettingElem($scope.id, graphMode);

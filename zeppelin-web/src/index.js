@@ -36,6 +36,8 @@ import './app/visualization/builtins/visualization-linechart.js';
 import './app/visualization/builtins/visualization-scatterchart.js';
 
 import './app/jobmanager/jobmanager.component.js';
+import './app/serving/serving.controller.js';
+import './app/serving/metric/serving-metric.component.js';
 import './app/interpreter/interpreter.controller.js';
 import './app/interpreter/interpreter.filter.js';
 import './app/interpreter/interpreter-item.directive.js';
