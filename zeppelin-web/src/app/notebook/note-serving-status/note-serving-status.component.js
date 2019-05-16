@@ -36,26 +36,26 @@ class NoteServingStatusController {
 
   updateStatus() {
     let self = this;
-    console.warn('Update status', this.noteid, this.revid);
 
-    this.http.get(this.apiBaseAddr + '/notebook/serving/' + this.noteid + '/' + this.revid)
-    .success(function(data, status) {
-      console.warn('Serving status', data, status);
-      if (data.body.task) {
-        if (Object.keys(data.body.task).length === 0) {
-          self.servingStatus = 'Not running';
+    if (this.noteid && this.revid) {
+      this.http.get(this.apiBaseAddr + '/notebook/serving/' + this.noteid + '/' + this.revid)
+      .success(function(data, status) {
+        if (data.body.task) {
+          if (Object.keys(data.body.task).length === 0) {
+            self.servingStatus = 'Not running';
+          } else {
+            self.servingStatus = 'Running';
+          }
         } else {
-          self.servingStatus = 'Running';
+          self.servingStatus = 'Not running';
         }
-      } else {
-        self.servingStatus = 'Not running';
-      }
-    })
-    .error(function(data, status) {
-      if (self.noteid && self.revid) {
-        self.servingStatus = 'Not running';
-      }
-    });
+      })
+      .error(function(data, status) {
+        if (self.noteid && self.revid) {
+          self.servingStatus = 'Not running';
+        }
+      });
+    }
 
     self._t = setTimeout(function() {
       self.updateStatus();

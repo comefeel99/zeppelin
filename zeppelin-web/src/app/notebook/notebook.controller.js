@@ -1511,9 +1511,10 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
     initializeLookAndFeel();
 
     // open interpreter binding setting when there're none selected
-    getInterpreterBindings();
-    getPermissions();
-
+    if (!$scope.taskView) {
+      getInterpreterBindings();
+      getPermissions();
+    }
     websocketMsgSrv.listRevisionHistory($routeParams.noteId);
 
     let isPersonalized = $scope.note.config.personalizedMode;

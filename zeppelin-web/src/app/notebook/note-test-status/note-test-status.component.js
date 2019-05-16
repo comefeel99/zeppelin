@@ -36,10 +36,8 @@ class NoteTestStatusController {
 
   updateStatus() {
     let self = this;
-    console.warn('Update status', this.noteid, this.revid);
     this.http.get(this.apiBaseAddr + '/notebook/test/' + this.noteid + '/' + this.revid)
       .success(function(data, status) {
-        console.warn('Test status', data, status);
         if (data.body.running) {
           self.testStatus = 'running';
           self._t = setTimeout(function() {

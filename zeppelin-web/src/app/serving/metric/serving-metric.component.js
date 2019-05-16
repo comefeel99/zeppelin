@@ -36,7 +36,6 @@ class ServingMetricController {
     this.http.get(this.apiBaseAddr + '/notebook/serving/' +
       this.noteid + '/' + this.revid + '/' + this.endpoint)
       .success(function(data, status) {
-        console.log('Metric', data);
         self.metrics = data.body;
         self.drawChart();
       })
@@ -44,6 +43,30 @@ class ServingMetricController {
         self.drawChart();
       });
   }
+
+  newTable() {
+    return {
+      columns: [
+        {
+          name: 'date',
+          index: 0,
+          aggr: 'sum',
+        },
+        {
+          name: 'group',
+          index: 2,
+          aggr: 'sum',
+        },
+        {
+          name: 'value',
+          index: 1,
+          aggr: 'sum',
+        }
+      ],
+      rows: [],
+    }
+  }
+
   drawChart() {
     let tables = {};
     let allDates = [];
@@ -59,35 +82,38 @@ class ServingMetricController {
         let groupName = (keys.length === 1) ? '' : key.substring(keys[0].length + 1);
 
         // create new table
-        if (!tables[tableName]) {
-          tables[tableName] = {
-            columns: [
-              {
-                name: 'date',
-                index: 0,
-                aggr: 'sum',
-              },
-              {
-                name: 'value',
-                index: 1,
-                aggr: 'sum',
-              },
-              {
-                name: 'group',
-                index: 2,
-                aggr: 'sum',
-              },
-            ],
-            rows: [],
-          };
-        }
+        if (tableName === "elapsed") {
+          if (!tables["numRequest"]) {
+            tables["numRequest"] = this.newTable();
+            tables["avgLatencyMsec"] = this.newTable();
+          }
 
-        let value = m.metric[key];
-        tables[tableName].rows.push([
-          dateString,
-          value,
-          groupName,
-        ]);
+          let value = m.metric[key];
+          tables["numRequest"].rows.push([
+            dateString,
+            value.count,
+            groupName,
+          ]);
+
+          tables["avgLatencyMsec"].rows.push([
+            dateString,
+            value.sum / value.count,
+            groupName,
+          ]);
+        } else {
+          if (!tables[tableName]) {
+            tables[tableName] = this.newTable();
+          }
+
+          let value = m.metric[key];
+          tables[tableName].rows.push([
+            dateString,
+            (tableName.match(/num/i)) ? value.count
+              : (tableName.match(/avg/i)) ? value.sum / value.count
+              : value.sum,
+            groupName,
+          ]);
+        }
       });
     });
 
@@ -111,7 +137,6 @@ class ServingMetricController {
       setTimeout(() => {
         let chartEl = this.element.find('#chart_' +
           self.noteid + self.revid + self.endpoint + tableName);
-        console.log('chart el ', chartEl);
         let chart = new Linechart(chartEl, {});
         let pivot = chart.getTransformation();
         pivot.config = {common: {}};
@@ -121,18 +146,12 @@ class ServingMetricController {
             index: 0,
             aggr: 'sum',
           }],
-          groups: [/* {
-            name: 'group',
-            index: 2,
-            aggr: 'sum',
-          } */],
+          groups: [],
           values: [{
             name: 'value',
             index: 1,
-            aggr: (tableName.match(/sum/i)) ? 'sum'
+            aggr: (tableName.match(/num/i)) ? 'sum'
               : (tableName.match(/avg/i)) ? 'avg'
-              : (tableName.match(/max/i)) ? 'max'
-              : (tableName.match(/min/i)) ? 'min'
               : 'sum',
           }],
         };
