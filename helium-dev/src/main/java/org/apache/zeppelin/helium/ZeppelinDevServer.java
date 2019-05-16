@@ -39,7 +39,7 @@ public class ZeppelinDevServer extends
   private DevInterpreter interpreter = null;
   private InterpreterOutput out;
   public ZeppelinDevServer(int port) throws TException, IOException {
-    super(null, port, null, ":");
+    super(null, port, null, ":", 0);
   }
 
   @Override
