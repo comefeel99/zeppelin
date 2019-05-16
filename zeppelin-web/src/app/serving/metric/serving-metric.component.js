@@ -61,10 +61,10 @@ class ServingMetricController {
           name: 'value',
           index: 1,
           aggr: 'sum',
-        }
+        },
       ],
       rows: [],
-    }
+    };
   }
 
   drawChart() {
@@ -82,20 +82,20 @@ class ServingMetricController {
         let groupName = (keys.length === 1) ? '' : key.substring(keys[0].length + 1);
 
         // create new table
-        if (tableName === "elapsed") {
-          if (!tables["numRequest"]) {
-            tables["numRequest"] = this.newTable();
-            tables["avgLatencyMsec"] = this.newTable();
+        if (tableName === 'elapsed') {
+          if (!tables['numRequest']) {
+            tables['numRequest'] = this.newTable();
+            tables['avgLatencyMsec'] = this.newTable();
           }
 
           let value = m.metric[key];
-          tables["numRequest"].rows.push([
+          tables['numRequest'].rows.push([
             dateString,
             value.count,
             groupName,
           ]);
 
-          tables["avgLatencyMsec"].rows.push([
+          tables['avgLatencyMsec'].rows.push([
             dateString,
             value.sum / value.count,
             groupName,
