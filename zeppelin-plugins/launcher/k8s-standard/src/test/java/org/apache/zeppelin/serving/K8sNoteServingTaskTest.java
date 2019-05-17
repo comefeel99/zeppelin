@@ -28,7 +28,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * K8sNoteServingTaskTest
@@ -45,46 +47,6 @@ public class K8sNoteServingTaskTest {
   @After
   public void tearDown() throws IOException {
     FileUtils.deleteDirectory(contextRoot);
-  }
-
-  @Test
-  public void testStart() throws IOException {
-    Note note = new Note();
-    note.setId("2E63B9RE6");
-    TaskContext task = new TaskContext(note, "rev1");
-
-    storage = new FileSystemTaskContextStorage(contextRoot.getAbsolutePath());
-    storage.save(task);
-
-    Kubectl kubectl = mock(Kubectl.class);
-    kubectl.setNamespace("default");
-    File servingTemplate = new File("../../../k8s/serving");
-    System.out.println(servingTemplate.getAbsolutePath());
-    K8sNoteServingTask noteServingTask = new K8sNoteServingTask(
-            kubectl,
-            task,
-            String.format("%s/%s/notebook", contextRoot.getAbsolutePath(), task.getId()),
-            servingTemplate);
-    noteServingTask.start();
-  }
-
-  @Test
-  public void testStop() throws IOException {
-    Note note = new Note();
-    note.setId("2E63B9RE6");
-    TaskContext task = new TaskContext(note, "rev1");
-
-    storage = new FileSystemTaskContextStorage(contextRoot.getAbsolutePath());
-
-    Kubectl kubectl = new Kubectl("kubectl");
-    kubectl.setNamespace("default");
-    File servingTemplate = new File("../../../k8s/serving");
-    K8sNoteServingTask noteServingTask = new K8sNoteServingTask(
-            kubectl,
-            task,
-            String.format("%s/%s/notebook", contextRoot.getAbsolutePath(), task.getId()),
-            servingTemplate);
-    noteServingTask.stop();
   }
 
   @Test
@@ -105,5 +67,6 @@ public class K8sNoteServingTaskTest {
             servingTemplate);
 
     boolean isRunning = noteServingTask.isRunning();
+    assertEquals(false, isRunning);
   }
 }
