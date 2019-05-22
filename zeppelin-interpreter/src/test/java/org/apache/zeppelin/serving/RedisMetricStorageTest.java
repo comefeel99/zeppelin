@@ -88,29 +88,4 @@ public class RedisMetricStorageTest {
     assertEquals(1, map.get("count").getCount());
     assertEquals(1.0, map.get("count").getSum(), 1.0);
   }
-
-  @Test
-  public void testReconnect() throws InterruptedException, IOException {
-    // given
-    RedisMetricStorage m = new RedisMetricStorage("localhost:" + redisPort, "note1", "rev1", 1);
-
-    Date now = new Date();
-
-    // when
-    m.add(now, "ep4", "count", 1);
-    redisServer.stop();
-    redisServer.start();
-
-    // then
-    try {
-      m.add(now, "ep4", "count", 1);
-      assertFalse(true);
-    } catch (JedisConnectionException e) {
-      // exception expected
-    }
-
-    // then
-    Metric metric = m.add(now, "ep4", "count", 1);
-    assertEquals(1, m.get(now, "ep4", "count").getCount());
-  }
 }
