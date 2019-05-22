@@ -56,8 +56,11 @@ public class K8sNoteServingTask extends K8sNoteBackgroundTask {
     properties.put("zeppelin.k8s.background.notebook.dir", notebookDir);
     properties.put("zeppelin.k8s.background.autoshutdown", "false");
     properties.put("zeppelin.k8s.background.type", "serving");
-    properties.put("zeppelin.k8s.serving.metric.redis.addr",
-            System.getenv(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_METRIC_REDIS_ADDR.name()));
+
+    String metricRedisAddr = System.getenv(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_METRIC_REDIS_ADDR.name());
+    if (metricRedisAddr != null) {
+      properties.put("zeppelin.k8s.serving.metric.redis.addr", metricRedisAddr);
+    }
     return properties;
   }
 
