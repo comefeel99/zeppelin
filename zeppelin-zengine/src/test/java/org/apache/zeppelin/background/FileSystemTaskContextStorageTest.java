@@ -38,7 +38,8 @@ public class FileSystemTaskContextStorageTest {
 
   @Before
   public void setUp() {
-    contextRoot = Files.createTempDir();
+    contextRoot = new File(System.getProperty("java.io.tmpdir") + "/ZeppelinLTest_" + System.currentTimeMillis());
+    contextRoot.mkdirs();
   }
 
   @After
