@@ -335,7 +335,7 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
 
   @Test
   public void testAddRestApiJsonRequest()
-          throws InterpreterException, InterruptedException, IOException {
+          throws Exception {
     // given
     int port = RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces();
     RestApiServer.setPort(port);
@@ -346,6 +346,7 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
             "def stringlen(d):\n  return len(d[\"input\"])\nz.addRestApi(\"len\", stringlen)\n",
             context);
     waitForResult(result, Code.SUCCESS);
+    waitForRestApiServerEndpointReady("len");
 
     // then
     PutMethod put = new PutMethod(String.format("http://localhost:%d/%s",
@@ -360,12 +361,14 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
     assertEquals(200, code);
     assertEquals("3", put.getResponseBodyAsString());
 
+    // clean up
     put.releaseConnection();
+    RestApiServer.shutdownSingleton();
   }
 
   @Test
   public void testAddRestApiJsonRequestJsonReturn()
-          throws InterpreterException, InterruptedException, IOException {
+          throws Exception {
     // given
     int port = RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces();
     RestApiServer.setPort(port);
@@ -377,6 +380,7 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
                     "z.addRestApi(\"len\", stringlen)\n",
             context);
     waitForResult(result, Code.SUCCESS);
+    waitForRestApiServerEndpointReady("len");
 
     // then
     PutMethod put = new PutMethod(String.format("http://localhost:%d/%s",
@@ -390,12 +394,14 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
     assertEquals(200, code);
     assertEquals("{\"len\":3}", put.getResponseBodyAsString());
 
+    // clean up
     put.releaseConnection();
+    RestApiServer.shutdownSingleton();
   }
 
   @Test
   public void testAddRestApiStringRequest()
-          throws InterpreterException, InterruptedException, IOException {
+          throws Exception {
     // given
     int port = RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces();
     RestApiServer.setPort(port);
@@ -405,6 +411,7 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
     InterpreterResult result = interpreter.interpret(
             "def stringlen(d):\n  return len(d)\nz.addRestApi(\"len\", stringlen)\n", context);
     waitForResult(result, Code.SUCCESS);
+    waitForRestApiServerEndpointReady("len");
 
     // then
     PutMethod put = new PutMethod(String.format("http://localhost:%d/%s",
@@ -415,12 +422,14 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
     assertEquals(200, code);
     assertEquals("3", put.getResponseBodyAsString());
 
+    // clean up
     put.releaseConnection();
+    RestApiServer.shutdownSingleton();
   }
 
   @Test
   public void testCustomResponseHeader()
-          throws InterpreterException, InterruptedException, IOException {
+          throws Exception {
     // given
     int port = RemoteInterpreterUtils.findRandomAvailablePortOnAllLocalInterfaces();
     RestApiServer.setPort(port);
@@ -431,18 +440,22 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
             "def stringlen(d):\n  return len(d), {'z-metric-c1': len(d)}\n" +
                     "z.addRestApi(\"len\", stringlen)\n", context);
     waitForResult(result, Code.SUCCESS);
+    waitForRestApiServerEndpointReady("len");
 
     // then
     PutMethod put = new PutMethod(String.format("http://localhost:%d/%s",
             RestApiServer.getPort(), "len"));
     put.setRequestEntity(new StringRequestEntity("abc", "text/plain", "utf8"));
 
+
     int code = client.executeMethod(put);
     assertEquals(200, code);
     assertEquals("3", put.getResponseBodyAsString());
     assertEquals("3", put.getResponseHeader("z-metric-c1").getValue());
 
+    // clean up
     put.releaseConnection();
+    RestApiServer.shutdownSingleton();
   }
 
   private void waitForResult(InterpreterResult result, InterpreterResult.Code code) {
@@ -459,4 +472,16 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
       }
     }
   }
+
+  // wait for rest api endpoint (for serving) ready
+  private void waitForRestApiServerEndpointReady(String endpointName) {
+    while (RestApiServer.singleton().getEndpoint(endpointName) == null) { // waits for endpoint ready
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        continue;
+      }
+    }
+  }
+
 }

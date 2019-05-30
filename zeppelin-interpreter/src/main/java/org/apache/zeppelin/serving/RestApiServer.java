@@ -16,6 +16,7 @@
  */
 package org.apache.zeppelin.serving;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -60,6 +61,14 @@ public class RestApiServer extends HttpServlet {
     return singletonInstance;
   }
 
+  @VisibleForTesting
+  public static void shutdownSingleton() throws Exception {
+    if (singletonInstance != null) {
+      singletonInstance.shutdown();
+      singletonInstance = null;
+    }
+  }
+
   private synchronized void start() {
     if (server != null) {
       return;
@@ -95,6 +104,10 @@ public class RestApiServer extends HttpServlet {
 
   public RestApiHandler getEndpoint(String endpoint) {
     return endpoints.get(endpoint);
+  }
+
+  public RestApiHandler removeEndpoint(String endpoint) {
+    return endpoints.remove(endpoint);
   }
 
   public ConcurrentLinkedQueue<MetricStorage> getMetricStorages() {
