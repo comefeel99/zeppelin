@@ -475,7 +475,8 @@ public class IPythonInterpreterTest extends BasePythonInterpreterTest {
 
   // wait for rest api endpoint (for serving) ready
   private void waitForRestApiServerEndpointReady(String endpointName) {
-    while (RestApiServer.singleton().getEndpoint(endpointName) == null) { // waits for endpoint ready
+    while (RestApiServer.singleton().getEndpoint(endpointName) == null) {
+      // waits for endpoint ready
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
