@@ -27,7 +27,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Set;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,14 +38,7 @@ import org.apache.zeppelin.interpreter.InterpreterResultMessage;
 import org.apache.zeppelin.metatron.antlr.MetatronLexer;
 import org.apache.zeppelin.metatron.antlr.MetatronParser;
 import org.apache.zeppelin.metatron.client.MetatronClient;
-import org.apache.zeppelin.metatron.message.DataResponse;
-import org.apache.zeppelin.metatron.message.Datasource;
-import org.apache.zeppelin.metatron.message.DatasourceDetail;
-import org.apache.zeppelin.metatron.message.Field;
-import org.apache.zeppelin.metatron.message.Filter;
-import org.apache.zeppelin.metatron.message.Limits;
-import org.apache.zeppelin.metatron.message.Projection;
-import org.apache.zeppelin.metatron.message.Record;
+import org.apache.zeppelin.metatron.message.*;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +65,7 @@ public class MetatronInterpreter extends Interpreter {
   private final Pattern showDatabasesPattern;
   private final Pattern showDetailPattern;
   private final Pattern getDataPattern;
+  private final Pattern sqlQueryPattern;
   private MetatronClient client;
 
   public MetatronInterpreter(Properties property) {
@@ -79,6 +73,7 @@ public class MetatronInterpreter extends Interpreter {
     showDatabasesPattern = Pattern.compile("show datasources");
     showDetailPattern = Pattern.compile("show (?<datasource>.*)");
     getDataPattern = Pattern.compile("datasource=(?<datasource>[^ ]+)[ ](?<filter>[^ ]+)[ ]limit=(?<limit>[0-9]+)[ ](?<dimension>[^ ]+)[ ](?<measure>[^ ]+)");
+    sqlQueryPattern = Pattern.compile("select (.*)");
   }
 
   @Override
@@ -121,7 +116,35 @@ public class MetatronInterpreter extends Interpreter {
     return runMetatronQuery(query, null);
   }
 
+  String ignoreComment(String input){
+
+    String[] change_target = input.split("\\n");
+
+    StringBuilder result = new StringBuilder();
+
+    String prefix = "";
+    for( String curLine : change_target ){
+
+      String tLine = curLine.trim();
+
+      if( tLine.length() > 0 && tLine.charAt(0) == '#'){
+        continue;
+      }
+
+      result.append(prefix);
+      prefix = "\n";
+      result.append(curLine);
+    }
+
+    return result.toString();
+
+  }
+
   InterpreterResult runMetatronQuery(String query, InterpreterContext interpreterContext) throws IOException {
+
+
+    query = ignoreComment(query);
+
     Matcher m = showDatabasesPattern.matcher(query);
     if (m.matches()) {
       List<Datasource> resp = client.showDatasources();
@@ -145,15 +168,16 @@ public class MetatronInterpreter extends Interpreter {
       summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
 
       StringBuilder fields = new StringBuilder();
-      fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
+      fields.append("id\tname\tlogicalName\ttype\tlogicalType\trole\taggrType\tseq\n");
       for (Field f : detail.getFields()) {
-        fields.append(f.getId() + '\t' +
+        fields.append(String.valueOf(f.getId()) + '\t' +
                 f.getName() + '\t' +
-                f.getAlias() + '\t' +
+                f.getLogicalName() + '\t' +
                 f.getType() + '\t' +
                 f.getLogicalType() + '\t' +
                 f.getRole() + '\t' +
-                f.getBiType() + '\n');
+                f.getAggrType() + '\t' +
+                String.valueOf(f.getSeq()) + '\n');
       }
 
       return new InterpreterResult(
@@ -229,14 +253,66 @@ public class MetatronInterpreter extends Interpreter {
       return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
     }
 
-    // parse statements using antlr and execute
-    MetatronParser parser = parseMetatronExpr(query);
-    List<InterpreterResultMessage> results = execStatement(parser.exprs().stmt());
-    if (results != null && results.size() > 0) {
-      return new InterpreterResult(InterpreterResult.Code.SUCCESS, results);
-    } else {
-      return null;
+
+    m = sqlQueryPattern.matcher(query);
+    if (m.matches()) {
+
+      SQLQueryResponse sqlQueryResponse = client.runSQLQuery( query );
+
+
+
+      StringBuilder table = new StringBuilder();
+
+      if (interpreterContext != null) {
+        interpreterContext.getResourcePool().put("data", sqlQueryResponse);
+      }
+
+      // create header
+      if (sqlQueryResponse.getData().size() <= 0) {
+        return new InterpreterResult(InterpreterResult.Code.SUCCESS);
+      }
+
+
+      for (Record r : sqlQueryResponse.getFields()) {
+        if (table.toString().length() > 0) {
+          table.append("\t");
+        }
+        table.append(r.get("name"));
+      }
+      table.append("\n");
+
+
+      // add rows
+      for (Record r : sqlQueryResponse.getData()) {
+
+        Iterator i = r.values().iterator();
+
+        if( i.hasNext() ) {
+          table.append(i.next());
+        }
+
+        while( i.hasNext()) {
+          table.append("\t");
+          table.append(i.next());
+        }
+
+        table.append("\n");
+      }
+
+      return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
     }
+
+
+
+    return null;
+//    // parse statements using antlr and execute
+//    MetatronParser parser = parseMetatronExpr(query);
+//    List<InterpreterResultMessage> results = execStatement(parser.exprs().stmt());
+//    if (results != null && results.size() > 0) {
+//      return new InterpreterResult(InterpreterResult.Code.SUCCESS, results);
+//    } else {
+//      return null;
+//    }
   }
 
   MetatronParser parseMetatronExpr(String cmd) throws IOException {
@@ -246,58 +322,59 @@ public class MetatronInterpreter extends Interpreter {
     return parser;
   }
 
-  List<InterpreterResultMessage> execStatement(List<MetatronParser.StmtContext> stmts) {
-    return stmts.stream()
-        .flatMap(s -> execStatement(s).stream())
-        .collect(Collectors.toList());
-  }
-
-  List<InterpreterResultMessage> execStatement(MetatronParser.StmtContext stmt) {
-    String resource = stmt.RESOURCE().getText();
-
-    DatasourceDetail detail = null;
-    try {
-      detail = client.showDatasource(resource);
-    } catch (IOException e) {
-      logger.error("Can't get datasource detail " + resource);
-      return ImmutableList.of(
-          new InterpreterResultMessage(InterpreterResult.Type.TEXT, e.getMessage())
-      );
-    }
-
-    StringBuilder summary = new StringBuilder();
-    String summaryFormat = "%-20s: %s\n";
-    summary.append(String.format(summaryFormat, "Created by", detail.getCreatedBy().getFullName()));
-    summary.append(String.format(summaryFormat, "Published", detail.isPublished()));
-    summary.append(String.format(summaryFormat, "Status", detail.getStatus()));
-    summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
-
-    StringBuilder fields = new StringBuilder();
-    fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
-    for (Field f : detail.getFields()) {
-      fields.append(f.getId() + '\t' +
-          f.getName() + '\t' +
-          f.getAlias() + '\t' +
-          f.getType() + '\t' +
-          f.getLogicalType() + '\t' +
-          f.getRole() + '\t' +
-          f.getBiType() + '\n');
-    }
-
-    return ImmutableList.of(
-        new InterpreterResultMessage(
-            InterpreterResult.Type.TEXT, summary.toString()),
-        new InterpreterResultMessage(
-            InterpreterResult.Type.TABLE, fields.toString())
-    );
-  }
+//  List<InterpreterResultMessage> execStatement(List<MetatronParser.StmtContext> stmts) {
+//    return stmts.stream()
+//        .flatMap(s -> execStatement(s).stream())
+//        .collect(Collectors.toList());
+//  }
+//
+//  List<InterpreterResultMessage> execStatement(MetatronParser.StmtContext stmt) {
+////    String resource = stmt.RESOURCE().getText();
+//    String resource = "sales";
+//
+//    DatasourceDetail detail = null;
+//    try {
+//      detail = client.showDatasource(resource);
+//    } catch (IOException e) {
+//      logger.error("Can't get datasource detail " + resource);
+//      return ImmutableList.of(
+//          new InterpreterResultMessage(InterpreterResult.Type.TEXT, e.getMessage())
+//      );
+//    }
+//
+//    StringBuilder summary = new StringBuilder();
+//    String summaryFormat = "%-20s: %s\n";
+//    summary.append(String.format(summaryFormat, "Created by", detail.getCreatedBy().getFullName()));
+//    summary.append(String.format(summaryFormat, "Published", detail.isPublished()));
+//    summary.append(String.format(summaryFormat, "Status", detail.getStatus()));
+//    summary.append(String.format(summaryFormat, "Description", detail.getDescription()));
+//
+//    StringBuilder fields = new StringBuilder();
+//    fields.append("id\tname\talias\ttype\tlogicalType\trole\tbiType\n");
+//    for (Field f : detail.getFields()) {
+//      fields.append(f.getId() + '\t' +
+//          f.getName() + '\t' +
+//          f.getAlias() + '\t' +
+//          f.getType() + '\t' +
+//          f.getLogicalType() + '\t' +
+//          f.getRole() + '\t' +
+//          f.getBiType() + '\n');
+//    }
+//
+//    return ImmutableList.of(
+//        new InterpreterResultMessage(
+//            InterpreterResult.Type.TEXT, summary.toString()),
+//        new InterpreterResultMessage(
+//            InterpreterResult.Type.TABLE, fields.toString())
+//    );
+//  }
 
   private InterpreterResultMessage datasourcesToTable(List<Datasource> ds) {
     StringBuilder table = new StringBuilder();
     table.append("id\tname\ttype\tengine\tdescription\n");
 
     for(Datasource d : ds) {
-      table.append(d.getId() + '\t' + d.getName() + '\t' + d.getEngineName() + '\t' + d.getDescription());
+      table.append(d.getId() + '\t' + d.getName() + '\t'  + d.getConnType() + '\t' + d.getEngineName() + '\t' + d.getDescription() + '\n') ;
     }
     return new InterpreterResultMessage(InterpreterResult.Type.TABLE, table.toString());
   }
@@ -323,6 +400,10 @@ public class MetatronInterpreter extends Interpreter {
       InterpreterContext interpreterContext) {
     final List suggestions = new ArrayList<>();
     return suggestions;
+  }
+
+  public MetatronClient getClient() {
+    return client;
   }
 
   private String getTokenForApiRequest(InterpreterContext interpreterContext) {

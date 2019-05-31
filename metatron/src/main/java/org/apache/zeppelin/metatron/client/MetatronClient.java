@@ -22,16 +22,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.zeppelin.metatron.message.AuthResponse;
-import org.apache.zeppelin.metatron.message.DataRequest;
-import org.apache.zeppelin.metatron.message.DataResponse;
-import org.apache.zeppelin.metatron.message.Datasource;
-import org.apache.zeppelin.metatron.message.DatasourceDetail;
-import org.apache.zeppelin.metatron.message.DatasourceRequest;
-import org.apache.zeppelin.metatron.message.DatasourcesResponse;
-import org.apache.zeppelin.metatron.message.Filter;
-import org.apache.zeppelin.metatron.message.Limits;
-import org.apache.zeppelin.metatron.message.Projection;
+import org.apache.zeppelin.metatron.message.*;
 
 /**
  * Metatron Http client
@@ -46,7 +37,8 @@ public class MetatronClient {
   enum RequestPath {
     OAUTH_TOKEN("/oauth/token"),
     API_DATASOURCES("/api/datasources"),
-    API_DATASOURCES_QUERY("/api/datasources/query/search");
+    API_DATASOURCES_QUERY("/api/datasources/query/search"),
+    API_SQL_QUERY("/api/connections/query/data?extractColumnName=true&limit=100000");
 
     String path;
     RequestPath(String path) {
@@ -133,6 +125,26 @@ public class MetatronClient {
     return readResponse(resp, DataResponse.class);
   }
 
+
+  public SQLQueryResponse runSQLQuery( String strSQLQuery ) throws IOException {
+
+    SQLQuery sqlQuery = new SQLQuery( strSQLQuery );
+
+    return runSQLQuery(sqlQuery);
+  }
+
+  public SQLQueryResponse runSQLQuery(SQLQuery sqlQuery) throws IOException {
+    HttpPost post = httpPost(RequestPath.API_SQL_QUERY);
+    try {
+      String request = gson.toJson(sqlQuery);
+      post.setEntity(new StringEntity(request));
+    } catch (UnsupportedEncodingException e) {
+      throw new IOException(e);
+    }
+
+    CloseableHttpResponse resp = httpClient.execute(post);
+    return readResponse(resp, SQLQueryResponse.class);
+  }
 
   /**
    * Get authentication token
