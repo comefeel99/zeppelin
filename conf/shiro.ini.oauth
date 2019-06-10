@@ -15,17 +15,59 @@
 # limitations under the License.
 #
 
-[users]
-# List of users with their password allowed to access Zeppelin.
-# To use a different strategy (LDAP / Database / ...) check the shiro doc at http://shiro.apache.org/configuration.html#Configuration-INISections
-# To enable admin user, uncomment the following line and set an appropriate password.
-#admin = password1, admin
-user1 = password2, role1, role2
-user2 = password3, role3
-user3 = password4, role2
-
 # Sample LDAP configuration, for user Authentication, currently tested for single Realm
 [main]
+#roleAdminAuthGenerator = org.pac4j.http.authorization.generator.RememberMeAuthorizationGenerator
+
+facebookClient = org.pac4j.oauth.client.FacebookClient
+facebookClient.key =
+facebookClient.secret =
+facebookClient.callbackUrl = http://localhost:8080
+facebookClient.scope = email
+
+oauthClient = org.pac4j.oauth.client.GenericOAuth20Client
+oauthClient.key = acme
+oauthClient.secret = acmesecret
+oauthClient.authUrl = http://localhost:8180/app/v2/user/login
+oauthClient.tokenUrl = http://localhost:8180/oauth/token
+oauthClient.callbackUrl = http://localhost:8080
+#oauthClient.authorizationGenerator = $roleAdminAuthGenerator
+
+#clients.callbackUrl = http://localhost:8080
+clients.clients = $oauthClient
+#clients.clients = $facebookClient
+
+#requireRoleAdmin = org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer
+#requireRoleAdmin.elements = ROLE_ADMIN
+#requireRoleAdmin.elements = admin
+
+#excludedPathMatcher = org.pac4j.core.matching.PathMatcher
+#excludedPathMatcher.excludedPath = /facebook/notprotected.jsp
+
+#config.authorizers = admin:$requireRoleAdmin
+#config.matchers = excludedPath:$excludedPathMatcher
+
+callbackFilter.defaultUrl = /
+
+authc = io.buji.pac4j.filter.SecurityFilter
+authc.config = $config
+authc.clients = GenericOAuth20Client
+#authc.clients = FacebookClient
+
+
+pac4jRealm = io.buji.pac4j.realm.Pac4jRealm
+pac4jSubjectFactory = io.buji.pac4j.subject.Pac4jSubjectFactory
+securityManager.subjectFactory = $pac4jSubjectFactory
+securityManager.realms = $pac4jRealm
+
+#sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager
+#securityManager.sessionManager = $sessionManager
+#securityManager.sessionManager.globalSessionTimeout = 86400000
+#cacheManager = org.apache.shiro.cache.MemoryConstrainedCacheManager
+#securityManager.cacheManager = $cacheManager
+
+# -----------------------
+
 ### A sample for configuring Active Directory Realm
 #activeDirectoryRealm = org.apache.zeppelin.realm.ActiveDirectoryGroupRealm
 #activeDirectoryRealm.systemUsername = userNameA
@@ -56,11 +98,6 @@ user3 = password4, role2
 #zeppelinHubRealm.zeppelinhubUrl = https://www.zeppelinhub.com
 #securityManager.realms = $zeppelinHubRealm
 
-### A sample for configuring Metatron Realm
-#metatronRealm = org.apache.zeppelin.realm.MetatronRealm
-#metatronRealm.authUrl = http://localhost:8180/oauth/token
-#securityManager.realms = $metatronRealm
-
 ## A same for configuring Knox SSO Realm
 #knoxJwtRealm = org.apache.zeppelin.realm.jwt.KnoxJwtRealm
 #knoxJwtRealm.providerUrl = https://domain.example.com/
@@ -75,30 +112,30 @@ user3 = password4, role2
 #knoxJwtRealm.principalMapping = principal.mapping
 #authc = org.apache.zeppelin.realm.jwt.KnoxAuthenticationFilter
 
-sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager
+#sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager
 
 ### If caching of user is required then uncomment below lines
 #cacheManager = org.apache.shiro.cache.MemoryConstrainedCacheManager
 #securityManager.cacheManager = $cacheManager
 
 ### Enables 'HttpOnly' flag in Zeppelin cookies
-cookie = org.apache.shiro.web.servlet.SimpleCookie
-cookie.name = JSESSIONID
-cookie.httpOnly = true
+#cookie = org.apache.shiro.web.servlet.SimpleCookie
+#cookie.name = JSESSIONID
+#cookie.httpOnly = true
 ### Uncomment the below line only when Zeppelin is running over HTTPS
 #cookie.secure = true
-sessionManager.sessionIdCookie = $cookie
+#sessionManager.sessionIdCookie = $cookie
 
-securityManager.sessionManager = $sessionManager
+#securityManager.sessionManager = $sessionManager
 # 86,400,000 milliseconds = 24 hour
-securityManager.sessionManager.globalSessionTimeout = 86400000
-shiro.loginUrl = /api/login
+#securityManager.sessionManager.globalSessionTimeout = 86400000
+#shiro.loginUrl = /api/login
 
-[roles]
-role1 = *
-role2 = *
-role3 = *
-admin = *
+#[roles]
+#role1 = *
+#role2 = *
+#role3 = *
+#admin = *
 
 [urls]
 # This section is used for url-based security. For details see the shiro.ini documentation.
@@ -117,11 +154,11 @@ admin = *
 /api/version = anon
 # Allow all authenticated users to restart interpreters on a notebook page.
 # Comment out the following line if you would like to authorize only admin users to restart interpreters.
-/api/interpreter/setting/restart/** = authc
-/api/interpreter/** = authc, roles[admin]
-/api/notebook-repositories/** = authc, roles[admin]
-/api/configurations/** = authc, roles[admin]
-/api/credential/** = authc, roles[admin]
-/api/admin/** = authc, roles[admin]
+#/api/interpreter/setting/restart/** = authc
+#/api/interpreter/** = authc, roles[admin]
+#/api/notebook-repositories/** = authc, roles[admin]
+#/api/configurations/** = authc, roles[admin]
+#/api/credential/** = authc, roles[admin]
+#/api/admin/** = authc, roles[admin]
 #/** = anon
 /** = authc
