@@ -56,11 +56,6 @@ user3 = password4, role2
 #zeppelinHubRealm.zeppelinhubUrl = https://www.zeppelinhub.com
 #securityManager.realms = $zeppelinHubRealm
 
-### A sample for configuring Metatron Realm
-#metatronRealm = org.apache.zeppelin.realm.MetatronRealm
-#metatronRealm.authUrl = http://localhost:8180/oauth/token
-#securityManager.realms = $metatronRealm
-
 ## A same for configuring Knox SSO Realm
 #knoxJwtRealm = org.apache.zeppelin.realm.jwt.KnoxJwtRealm
 #knoxJwtRealm.providerUrl = https://domain.example.com/
