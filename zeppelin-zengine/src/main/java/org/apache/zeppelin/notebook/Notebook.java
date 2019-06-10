@@ -587,8 +587,4 @@ public class Notebook {
       return false;
     }
   }
-
-  public Credentials getCredentials() {
-    return credentials;
-  }
 }
