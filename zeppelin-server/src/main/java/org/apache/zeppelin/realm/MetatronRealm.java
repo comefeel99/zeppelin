@@ -22,12 +22,16 @@ import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.zeppelin.notebook.Notebook;
 import org.apache.zeppelin.server.ZeppelinServer;
 import org.apache.zeppelin.user.UserCredentials;
 import org.apache.zeppelin.user.UsernamePassword;
 import org.eclipse.jetty.util.security.Credential;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.api.ServiceLocatorFactory;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 public class MetatronRealm extends AuthorizingRealm  {
   String authUrl; // http(s)://localhost:8180/oauth/token
@@ -111,7 +115,10 @@ public class MetatronRealm extends AuthorizingRealm  {
     // put user credential, so interpreter can read this information
     UserCredentials userCredentials = new UserCredentials();
     userCredentials.putUsernamePassword("token", new UsernamePassword(username, authResp.access_token));
-    ZeppelinServer.notebook.getCredentials().putUserCredentials(username, userCredentials);
+
+    ServiceLocator sharedServiceLocator = ServiceLocatorFactory.getInstance().create("shared-locator");
+    Notebook notebook = sharedServiceLocator.getService(Notebook.class);
+    notebook.getCredentials().putUserCredentials(username, userCredentials);
 
     return authResp;
   }
