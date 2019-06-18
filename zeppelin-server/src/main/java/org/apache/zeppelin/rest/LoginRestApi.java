@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -34,6 +35,7 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.UsernamePasswordToken;
@@ -42,11 +44,13 @@ import org.apache.shiro.subject.Subject;
 import org.apache.zeppelin.annotation.ZeppelinApi;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.notebook.Notebook;
-import org.apache.zeppelin.notebook.NotebookAuthorization;
+import org.apache.zeppelin.notebook.AuthorizationService;
 import org.apache.zeppelin.realm.jwt.JWTAuthenticationToken;
 import org.apache.zeppelin.realm.jwt.KnoxJwtRealm;
+import org.apache.zeppelin.realm.kerberos.KerberosRealm;
+import org.apache.zeppelin.realm.kerberos.KerberosToken;
 import org.apache.zeppelin.server.JsonResponse;
-import org.apache.zeppelin.service.SecurityService;
+import org.apache.zeppelin.service.AuthenticationService;
 import org.apache.zeppelin.ticket.TicketContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,17 +60,22 @@ import org.slf4j.LoggerFactory;
  */
 @Path("/login")
 @Produces("application/json")
+@Singleton
 public class LoginRestApi {
   private static final Logger LOG = LoggerFactory.getLogger(LoginRestApi.class);
   private static final Gson gson = new Gson();
   private ZeppelinConfiguration zConf;
-  private SecurityService securityService;
+
+  private AuthenticationService authenticationService;
+  private AuthorizationService authorizationService;
 
   @Inject
   public LoginRestApi(Notebook notebook,
-      SecurityService securityService) {
+                      AuthenticationService authenticationService,
+                      AuthorizationService authorizationService) {
     this.zConf = notebook.getConf();
-    this.securityService = securityService;
+    this.authenticationService = authenticationService;
+    this.authorizationService = authorizationService;
   }
 
   @GET
@@ -94,12 +103,51 @@ public class LoginRestApi {
         response = new JsonResponse(Status.OK, "", data);
       }
       return response.build();
+    } else {
+      KerberosRealm kerberosRealm = getKerberosRealm();
+      if (null != kerberosRealm) {
+        try {
+          Map<String, Cookie> cookies = headers.getCookies();
+          KerberosToken kerberosToken = KerberosRealm.getKerberosTokenFromCookies(cookies);
+          if (null != kerberosToken) {
+            Subject currentUser = org.apache.shiro.SecurityUtils.getSubject();
+            String name = (String) kerberosToken.getPrincipal();
+            if (!currentUser.isAuthenticated() || !currentUser.getPrincipal().equals(name)) {
+              response = proceedToLogin(currentUser, kerberosToken);
+            }
+          }
+          if (null == response) {
+            LOG.warn("No Kerberos token received");
+            response = new JsonResponse(Status.UNAUTHORIZED, "", null);
+          }
+          return response.build();
+        } catch (AuthenticationException e){
+          LOG.error("Error in Login: " + e);
+        }
+      }
     }
     return new JsonResponse(Status.METHOD_NOT_ALLOWED).build();
   }
 
+  private KerberosRealm getKerberosRealm() {
+    Collection realmsList = authenticationService.getRealmsList();
+    if (realmsList != null) {
+      for (Iterator<Realm> iterator = realmsList.iterator(); iterator.hasNext(); ) {
+        Realm realm = iterator.next();
+        String name = realm.getClass().getName();
+
+        LOG.debug("RealmClass.getName: " + name);
+
+        if (name.equals("org.apache.zeppelin.realm.kerberos.KerberosRealm")) {
+          return (KerberosRealm) realm;
+        }
+      }
+    }
+    return null;
+  }
+
   private KnoxJwtRealm getJTWRealm() {
-    Collection realmsList = securityService.getRealmsList();
+    Collection realmsList = authenticationService.getRealmsList();
     if (realmsList != null) {
       for (Iterator<Realm> iterator = realmsList.iterator(); iterator.hasNext(); ) {
         Realm realm = iterator.next();
@@ -116,7 +164,7 @@ public class LoginRestApi {
   }
 
   private boolean isKnoxSSOEnabled() {
-    Collection realmsList = securityService.getRealmsList();
+    Collection realmsList = authenticationService.getRealmsList();
     if (realmsList != null) {
       for (Iterator<Realm> iterator = realmsList.iterator(); iterator.hasNext(); ) {
         Realm realm = iterator.next();
@@ -137,8 +185,8 @@ public class LoginRestApi {
       currentUser.getSession(true);
       currentUser.login(token);
 
-      Set<String> roles = securityService.getAssociatedRoles();
-      String principal = securityService.getPrincipal();
+      Set<String> roles = authenticationService.getAssociatedRoles();
+      String principal = authenticationService.getPrincipal();
       String ticket;
       if ("anonymous".equals(principal)) {
         ticket = "anonymous";
@@ -155,7 +203,7 @@ public class LoginRestApi {
       // if no exception, that's it, we're done!
 
       // set roles for user in NotebookAuthorization module
-      NotebookAuthorization.getInstance().setRoles(principal, roles);
+      authorizationService.setRoles(principal, roles);
     } catch (AuthenticationException uae) {
       // username wasn't in the system, show them an error message?
       // password didn't match, try again?
@@ -178,12 +226,14 @@ public class LoginRestApi {
   @ZeppelinApi
   public Response postLogin(@FormParam("userName") String userName,
       @FormParam("password") String password) {
+    LOG.debug("userName:" + userName);
     JsonResponse response = null;
     // ticket set to anonymous for anonymous user. Simplify testing.
     Subject currentUser = org.apache.shiro.SecurityUtils.getSubject();
     if (currentUser.isAuthenticated()) {
       currentUser.logout();
     }
+    LOG.debug("currentUser: " + currentUser);
     if (!currentUser.isAuthenticated()) {
 
       UsernamePasswordToken token = new UsernamePasswordToken(userName, password);
@@ -237,7 +287,7 @@ public class LoginRestApi {
 
   private void logoutCurrentUser() {
     Subject currentUser = org.apache.shiro.SecurityUtils.getSubject();
-    TicketContainer.instance.removeTicket(securityService.getPrincipal());
+    TicketContainer.instance.removeTicket(authenticationService.getPrincipal());
     currentUser.getSession().stop();
     currentUser.logout();
   }

@@ -237,7 +237,7 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
   };
 
   $scope.isTrash = function(note) {
-    return note ? note.name.split('/')[0] === TRASH_FOLDER_ID : false;
+    return note ? note.path.split('/')[1] === TRASH_FOLDER_ID : false;
   };
 
   // Export notebook
@@ -289,7 +289,7 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
       message: 'Commit note to current repository?',
       callback: function(result) {
         if (result) {
-          websocketMsgSrv.checkpointNote($routeParams.noteId, $routeParams.name, commitMessage);
+          websocketMsgSrv.checkpointNote($routeParams.noteId, commitMessage);
         }
       },
     });
@@ -1579,14 +1579,16 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
   });
 
   let content = document.getElementById('content');
-  $scope.addEvent({
-    eventID: content.id,
-    eventType: 'resize',
-    element: window,
-    onDestroyElement: content,
-    handler: () => {
-      const actionbarHeight = document.getElementById('actionbar').lastElementChild.clientHeight;
-      angular.element(document.getElementById('content')).css('padding-top', actionbarHeight - 20);
-    },
-  });
+  if (content && content.id) {
+    $scope.addEvent({
+      eventID: content.id,
+      eventType: 'resize',
+      element: window,
+      onDestroyElement: content,
+      handler: () => {
+        const actionbarHeight = document.getElementById('actionbar').lastElementChild.clientHeight;
+        angular.element(document.getElementById('content')).css('padding-top', actionbarHeight - 20);
+      },
+    });
+  }
 }

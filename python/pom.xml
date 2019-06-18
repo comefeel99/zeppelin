@@ -87,6 +87,14 @@
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>net.jodah</groupId>
+      <artifactId>concurrentunit</artifactId>
+      <version>0.4.4</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -182,6 +190,11 @@
               <resource>reference.conf</resource>
             </transformer>
           </transformers>
+          <artifactSet>
+            <excludes>
+              <exclude>org.apache.zeppelin:zeppelin-interpreter-api</exclude>
+            </excludes>
+          </artifactSet>
           <outputFile>${project.build.directory}/../../interpreter/python/${interpreter.jar.name}-${project.version}.jar</outputFile>
         </configuration>
         <executions>

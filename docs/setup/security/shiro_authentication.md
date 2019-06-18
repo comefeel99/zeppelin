@@ -28,6 +28,9 @@ limitations under the License.
 
 When you connect to Apache Zeppelin, you will be asked to enter your credentials. Once you logged in, then you have access to all notes including other user's notes.
 
+## Important Note
+By default, Zeppelin allows anonymous access. It is strongly recommended that you consider setting up Apache Shiro for authentication (as described in this document, see 2 Secure the Websocket channel), or only deploy and use Zeppelin in a secured and trusted environment.
+
 ## Security Setup
 You can setup **Zeppelin notebook authentication** in some simple steps.
 
@@ -80,7 +83,7 @@ activeDirectoryRealm.groupRolesMap = "CN=aGroupName,OU=groups,DC=SOME_GROUP,DC=C
 activeDirectoryRealm.authorizationCachingEnabled = false
 activeDirectoryRealm.principalSuffix = @corp.company.net
 
-ldapRealm = org.apache.zeppelin.server.LdapGroupRealm
+ldapRealm = org.apache.zeppelin.realm.LdapGroupRealm
 # search base for ldap groups (only relevant for LdapGroupRealm):
 ldapRealm.contextFactory.environment[ldap.searchBase] = dc=COMPANY,dc=COM
 ldapRealm.contextFactory.url = ldap://ldap.test.com:389
@@ -222,7 +225,7 @@ zeppelinHubRealm.zeppelinhubUrl = https://www.zeppelinhub.com
 securityManager.realms = $zeppelinHubRealm
 ```
 
-> Note: ZeppelinHub is not releated to Apache Zeppelin project.
+> Note: ZeppelinHub is not related to Apache Zeppelin project.
 
 ### Knox SSO
 [KnoxSSO](https://knox.apache.org/books/knox-0-13-0/dev-guide.html#KnoxSSO+Integration) provides an abstraction for integrating any number of authentication systems and SSO solutions and enables participating web applications to scale to those solutions more easily. Without the token exchange capabilities offered by KnoxSSO each component UI would need to integrate with each desired solution on its own.
@@ -247,6 +250,52 @@ knoxJwtRealm.principalMapping = principal.mapping
 authc = org.apache.zeppelin.realm.jwt.KnoxAuthenticationFilter
 ```
 
+### HTTP SPNEGO Authentication
+HTTP SPNEGO (Simple and Protected GSS-API NEGOtiation) is the standard way to support Kerberos Ticket based user authentication for Web Services. Based on [Apache Hadoop Auth](https://hadoop.apache.org/docs/current/hadoop-auth/index.html), Zeppelin supports ability to authenticate users by accepting and validating their Kerberos Ticket.
+
+When HTTP SPNEGO Authentication is enabled for Zeppelin, the [Apache Hadoop Groups Mapping](https://hadoop.apache.org/docs/r2.8.0/hadoop-project-dist/hadoop-common/GroupsMapping.html) configuration will used internally to determine group membership of user who is trying to log in. Role-based access permission can be set based on groups as seen by Hadoop.
+
+To enable this, apply the following change in `conf/shiro.ini` under `[main]` section.
+
+```
+krbRealm = org.apache.zeppelin.realm.kerberos.KerberosRealm
+krbRealm.principal=HTTP/zeppelin.fqdn.domain.com@EXAMPLE.COM
+krbRealm.keytab=/etc/security/keytabs/spnego.service.keytab
+krbRealm.nameRules=DEFAULT
+krbRealm.signatureSecretFile=/etc/security/http_secret
+krbRealm.tokenValidity=36000
+krbRealm.cookieDomain=domain.com
+krbRealm.cookiePath=/
+authc = org.apache.zeppelin.realm.kerberos.KerberosAuthenticationFilter
+```
+For above configuration to work, user need to do some more configurations outside Zeppelin.
+
+1). A valid SPNEGO keytab should be available on the Zeppelin node and should be readable by 'zeppelin' user. If there is a SPNEGO keytab already available (because of other Hadoop service), it can be reused here and no need to generate a new keytab. An example of working SPNEGO keytab could be:
+```
+$ klist -kt /etc/security/keytabs/spnego.service.keytab
+Keytab name: FILE:/etc/security/keytabs/spnego.service.keytab
+KVNO Timestamp           Principal
+---- ------------------- ------------------------------------------------------
+   2 11/26/2018 16:58:38 HTTP/zeppelin.fqdn.domain.com@EXAMPLE.COM
+   2 11/26/2018 16:58:38 HTTP/zeppelin.fqdn.domain.com@EXAMPLE.COM
+   2 11/26/2018 16:58:38 HTTP/zeppelin.fqdn.domain.com@EXAMPLE.COM
+   2 11/26/2018 16:58:38 HTTP/zeppelin.fqdn.domain.com@EXAMPLE.COM
+```
+and the keytab permission should be: (VERY IMPORTANT to not to set this to 777 or readable by all !!!):
+```
+$ ls -l /etc/security/keytabs/spnego.service.keytab
+-r--r-----. 1 root hadoop 346 Nov 26 16:58 /etc/security/keytabs/spnego.service.keytab
+```
+Above 'zeppelin' user happens to be member of 'hadoop' group.
+
+2). A secret signature file must be present on Zeppelin node (readable to 'zeppelin' user). This file contains the random binary numbers which is used to sign 'hadoop.auth' cookie, generated during SPNEGO exchange. If such a file is already generated and available on the Zeppelin node, it should be used rather than generating a new file.
+
+Commands to generate a secret signature file (if required):
+```
+dd if=/dev/urandom of=/etc/security/http_secret bs=1024 count=1
+chown hdfs:hadoop /etc/security/http_secret
+chmod 440 /etc/security/http_secret
+```
 
 ## Secure Cookie for Zeppelin Sessions (optional)
 Zeppelin can be configured to set `HttpOnly` flag in the session cookie. With this configuration, Zeppelin cookies can 

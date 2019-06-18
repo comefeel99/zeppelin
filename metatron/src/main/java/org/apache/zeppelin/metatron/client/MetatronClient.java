@@ -24,6 +24,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.zeppelin.metatron.message.*;
 
+
 /**
  * Metatron Http client
  */
@@ -125,8 +126,7 @@ public class MetatronClient {
     return readResponse(resp, DataResponse.class);
   }
 
-
-  public SQLQueryResponse runSQLQuery( String strSQLQuery ) throws IOException {
+  public SQLQueryResponse runSQLQuery(String strSQLQuery ) throws IOException {
 
     SQLQuery sqlQuery = new SQLQuery( strSQLQuery );
 
@@ -145,6 +145,7 @@ public class MetatronClient {
     CloseableHttpResponse resp = httpClient.execute(post);
     return readResponse(resp, SQLQueryResponse.class);
   }
+
 
   /**
    * Get authentication token

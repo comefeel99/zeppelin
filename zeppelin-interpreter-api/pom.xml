@@ -64,6 +64,8 @@
               <exclude>org.slf4j:slf4j-log4j12</exclude>
               <!-- Leave commons-logging unshaded so downstream users can configure logging. -->
               <exclude>commons-logging:commons-logging</exclude>
+              <!-- Leave commons-exec unshaded so downstream users can use ProcessLauncher. -->
+              <exclude>org.apache.commons:commons-exec</exclude>
               <!-- Leave log4j unshaded so downstream users can configure logging. -->
               <exclude>log4j:log4j</exclude>
               <exclude>com.esotericsoftware:kryo</exclude>
@@ -111,6 +113,8 @@
                 <exclude>org/slf4j/**/*</exclude>
                 <exclude>org/apache/commons/logging/*</exclude>
                 <exclude>org/apache/commons/logging/**/*</exclude>
+                <exclude>org/apache/commons/exec/*</exclude>
+                <exclude>org/apache/commons/exec/**/*</exclude>
                 <exclude>org/apache/log4j/*</exclude>
                 <exclude>org/apache/log4j/**/*</exclude>
                 <exclude>org/sonatype/*</exclude>
@@ -142,6 +146,26 @@
             <goals>
               <goal>shade</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>copy-to-interpreter</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <echo>ANT TASK - copying files....</echo>
+                <copy todir="${project.basedir}/../interpreter" overwrite="true" flatten="true">
+                  <fileset dir="${project.build.directory}" includes="zeppelin-interpreter-api-*.jar" >
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
           </execution>
         </executions>
       </plugin>

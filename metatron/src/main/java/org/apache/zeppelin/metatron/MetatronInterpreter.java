@@ -144,7 +144,6 @@ public class MetatronInterpreter extends Interpreter {
 
 
     query = ignoreComment(query);
-
     Matcher m = showDatabasesPattern.matcher(query);
     if (m.matches()) {
       List<Datasource> resp = client.showDatasources();
@@ -253,7 +252,6 @@ public class MetatronInterpreter extends Interpreter {
       return new InterpreterResult(InterpreterResult.Code.SUCCESS, InterpreterResult.Type.TABLE, table.toString());
     }
 
-
     m = sqlQueryPattern.matcher(query);
     if (m.matches()) {
 
@@ -321,7 +319,6 @@ public class MetatronInterpreter extends Interpreter {
     MetatronParser parser = new org.apache.zeppelin.metatron.antlr.MetatronParser(new CommonTokenStream(lexer));
     return parser;
   }
-
 //  List<InterpreterResultMessage> execStatement(List<MetatronParser.StmtContext> stmts) {
 //    return stmts.stream()
 //        .flatMap(s -> execStatement(s).stream())
@@ -402,9 +399,11 @@ public class MetatronInterpreter extends Interpreter {
     return suggestions;
   }
 
+
   public MetatronClient getClient() {
     return client;
   }
+
 
   private String getTokenForApiRequest(InterpreterContext interpreterContext) {
     AuthenticationInfo authenticationInfo = interpreterContext.getAuthenticationInfo();

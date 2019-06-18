@@ -4,4 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class Record extends LinkedHashMap<String, Object> {
+
+//public class Record extends HashMap<String, Object> {
 }

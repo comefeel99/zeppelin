@@ -26,6 +26,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.util.Set;
+import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -53,6 +54,8 @@ import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.apache.zeppelin.util.ReflectionUtils;
 import org.apache.zeppelin.storage.ConfigStorage;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonatype.aether.repository.Proxy;
@@ -76,7 +79,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -87,8 +89,8 @@ import java.util.stream.Collectors;
  * (load/create/update/remove/get)
  * TODO(zjffdu) We could move it into another separated component.
  */
-public class InterpreterSettingManager implements InterpreterSettingManagerMBean,
-    NoteEventListener {
+@ManagedObject("interpreterSettingManager")
+public class InterpreterSettingManager implements NoteEventListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InterpreterSettingManager.class);
   private static final Map<String, Object> DEFAULT_EDITOR = ImmutableMap.of(
@@ -126,6 +128,7 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
   private ConfigStorage configStorage;
   private RemoteInterpreterEventServer interpreterEventServer;
 
+  @Inject
   public InterpreterSettingManager(ZeppelinConfiguration zeppelinConfiguration,
                                    AngularObjectRegistryListener angularObjectRegistryListener,
                                    RemoteInterpreterProcessListener
@@ -398,7 +401,9 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
       //TODO(zjffdu) merge RegisteredInterpreter & InterpreterInfo
       InterpreterInfo interpreterInfo =
           new InterpreterInfo(registeredInterpreter.getClassName(), registeredInterpreter.getName(),
-              registeredInterpreter.isDefaultInterpreter(), registeredInterpreter.getEditor());
+              registeredInterpreter.isDefaultInterpreter(), registeredInterpreter.getEditor(),
+              registeredInterpreter.getConfig());
+      interpreterInfo.setConfig(registeredInterpreter.getConfig());
       group = registeredInterpreter.getGroup();
       runner = registeredInterpreter.getRunner();
       // use defaultOption if it is not specified in interpreter-setting.json
@@ -490,6 +495,24 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
       LOGGER.debug("Couldn't get interpreter editor setting");
     }
     return editor;
+  }
+
+  // Get configuration parameters from `interpreter-setting.json`
+  // based on the interpreter group ID
+  public Map<String, Object> getConfigSetting(String interpreterGroupId) {
+    InterpreterSetting interpreterSetting = get(interpreterGroupId);
+    if (null != interpreterSetting) {
+      List<InterpreterInfo> interpreterInfos = interpreterSetting.getInterpreterInfos();
+      int infoSize = interpreterInfos.size();
+      for (InterpreterInfo intpInfo : interpreterInfos) {
+        if ((intpInfo.isDefaultInterpreter() || (infoSize == 1))
+            && (intpInfo.getConfig() != null)) {
+          return intpInfo.getConfig();
+        }
+      }
+    }
+
+    return new HashMap<>();
   }
 
   public List<ManagedInterpreterGroup> getAllInterpreterGroup() {
@@ -609,37 +632,35 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
    * changed
    */
   private void copyDependenciesFromLocalPath(final InterpreterSetting setting) {
-    setting.setStatus(InterpreterSetting.Status.DOWNLOADING_DEPENDENCIES);
-      final Thread t = new Thread() {
-        public void run() {
-          try {
-            List<Dependency> deps = setting.getDependencies();
-            if (deps != null) {
-              for (Dependency d : deps) {
-                File destDir = new File(
-                    conf.getRelativeDir(ConfVars.ZEPPELIN_DEP_LOCALREPO));
+    final Thread t = new Thread() {
+      public void run() {
+        try {
+          List<Dependency> deps = setting.getDependencies();
+          if (deps != null) {
+            for (Dependency d : deps) {
+              File destDir = new File(
+                  conf.getRelativeDir(ConfVars.ZEPPELIN_DEP_LOCALREPO));
 
-                int numSplits = d.getGroupArtifactVersion().split(":").length;
-                if (!(numSplits >= 3 && numSplits <= 6)) {
-                  dependencyResolver.copyLocalDependency(d.getGroupArtifactVersion(),
-                      new File(destDir, setting.getId()));
-                }
+              int numSplits = d.getGroupArtifactVersion().split(":").length;
+              if (!(numSplits >= 3 && numSplits <= 6)) {
+                dependencyResolver.copyLocalDependency(d.getGroupArtifactVersion(),
+                    new File(destDir, setting.getId()));
               }
             }
-            setting.setStatus(InterpreterSetting.Status.READY);
-          } catch (Exception e) {
-            LOGGER.error(String.format("Error while copying deps for interpreter group : %s," +
-                    " go to interpreter setting page click on edit and save it again to make " +
-                    "this interpreter work properly.",
-                setting.getGroup()), e);
-            setting.setErrorReason(e.getLocalizedMessage());
-            setting.setStatus(InterpreterSetting.Status.ERROR);
-          } finally {
-
           }
+        } catch (Exception e) {
+          LOGGER.error(String.format("Error while copying deps for interpreter group : %s," +
+                  " go to interpreter setting page click on edit and save it again to make " +
+                  "this interpreter work properly.",
+              setting.getGroup()), e);
+          setting.setErrorReason(e.getLocalizedMessage());
+          setting.setStatus(InterpreterSetting.Status.ERROR);
+        } finally {
+
         }
-      };
-      t.start();
+      }
+    };
+    t.start();
   }
 
   /**
@@ -772,7 +793,9 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
   }
 
   public void restart(String id) throws InterpreterException {
-    interpreterSettings.get(id).close();
+    InterpreterSetting setting = interpreterSettings.get(id);
+    copyDependenciesFromLocalPath(setting);
+    setting.close();
   }
 
   public InterpreterSetting get(String id) {
@@ -868,7 +891,7 @@ public class InterpreterSettingManager implements InterpreterSettingManagerMBean
     }
   }
 
-  @Override
+  @ManagedAttribute
   public Set<String> getRunningInterpreters() {
     Set<String> runningInterpreters = Sets.newHashSet();
     for (Map.Entry<String, InterpreterSetting> entry : interpreterSettings.entrySet()) {

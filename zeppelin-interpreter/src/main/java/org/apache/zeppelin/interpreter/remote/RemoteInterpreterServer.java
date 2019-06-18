@@ -19,6 +19,7 @@ package org.apache.zeppelin.interpreter.remote;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -73,6 +74,8 @@ import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -216,12 +219,14 @@ public class RemoteInterpreterServer extends Thread
   public void shutdown() throws TException {
     logger.info("Shutting down...");
     if (interpreterGroup != null) {
-      for (List<Interpreter> session : interpreterGroup.values()) {
-        for (Interpreter interpreter : session) {
-          try {
-            interpreter.close();
-          } catch (InterpreterException e) {
-            logger.warn("Fail to close interpreter", e);
+      synchronized (interpreterGroup) {
+        for (List<Interpreter> session : interpreterGroup.values()) {
+          for (Interpreter interpreter : session) {
+            try {
+              interpreter.close();
+            } catch (InterpreterException e) {
+              logger.warn("Fail to close interpreter", e);
+            }
           }
         }
       }
@@ -244,8 +249,11 @@ public class RemoteInterpreterServer extends Thread
     }
 
     if (server.isServing()) {
+      logger.info("Force shutting down");
       System.exit(0);
     }
+
+    logger.info("Shutting down");
   }
 
   public int getPort() {
@@ -278,6 +286,19 @@ public class RemoteInterpreterServer extends Thread
     RemoteInterpreterServer remoteInterpreterServer =
         new RemoteInterpreterServer(zeppelinServerHost, port, interpreterGroupId, portRange);
     remoteInterpreterServer.start();
+
+    // add signal handler
+    Signal.handle(new Signal("TERM"), new SignalHandler() {
+      @Override
+      public void handle(Signal signal) {
+        try {
+          remoteInterpreterServer.shutdown();
+        } catch (TException e) {
+          logger.error("Error on shutdown RemoteInterpreterServer", e);
+        }
+      }
+    });
+
     remoteInterpreterServer.join();
     System.exit(0);
   }
@@ -403,27 +424,27 @@ public class RemoteInterpreterServer extends Thread
     }
 
     // close interpreters
-    List<Interpreter> interpreters;
-    synchronized (interpreterGroup) {
-      interpreters = interpreterGroup.get(sessionId);
-    }
-    if (interpreters != null) {
-      Iterator<Interpreter> it = interpreters.iterator();
-      while (it.hasNext()) {
-        Interpreter inp = it.next();
-        if (inp.getClassName().equals(className)) {
-          try {
-            inp.close();
-          } catch (InterpreterException e) {
-            logger.warn("Fail to close interpreter", e);
+    if (interpreterGroup != null) {
+      synchronized (interpreterGroup) {
+        List<Interpreter> interpreters = interpreterGroup.get(sessionId);
+        if (interpreters != null) {
+          Iterator<Interpreter> it = interpreters.iterator();
+          while (it.hasNext()) {
+            Interpreter inp = it.next();
+            if (inp.getClassName().equals(className)) {
+              try {
+                inp.close();
+              } catch (InterpreterException e) {
+                logger.warn("Fail to close interpreter", e);
+              }
+              it.remove();
+              break;
+            }
           }
-          it.remove();
-          break;
         }
       }
     }
   }
-
 
   @Override
   public RemoteInterpreterResult interpret(String sessionId, String className, String st,
@@ -611,13 +632,15 @@ public class RemoteInterpreterServer extends Thread
           int lastMessageIndex = resultMessages.size() - 1;
           if (resultMessages.get(lastMessageIndex).getType() == InterpreterResult.Type.TABLE) {
             context.getResourcePool().put(
-                context.getNoteId(),
-                context.getParagraphId(),
-                WellKnownResourceName.ZeppelinTableResult.toString(),
-                resultMessages.get(lastMessageIndex));
+                    context.getNoteId(),
+                    context.getParagraphId(),
+                    WellKnownResourceName.ZeppelinTableResult.toString(),
+                    resultMessages.get(lastMessageIndex));
           }
         }
         return new InterpreterResult(result.code(), resultMessages);
+      } catch (Throwable e) {
+        return new InterpreterResult(Code.ERROR, ExceptionUtils.getStackTrace(e));
       } finally {
         Thread.currentThread().setContextClassLoader(currentThreadContextClassloader);
         InterpreterContext.remove();
